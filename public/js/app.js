@@ -100,7 +100,6 @@ const API = {
   },
 
   async put(path, data) {
-    if (VERCEL_MODE) throw new Error('Editing data is available only on localhost. Save locally, then push data to GitHub.');
     const res = await fetch(`${this.base}${path}`, {
       method: 'PUT',
       headers: this.authHeaders({ 'Content-Type': 'application/json' }),

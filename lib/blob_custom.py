@@ -1,0 +1,67 @@
+"""Persistent custom-player storage for Vercel deployments.
+
+Imported Excel snapshots always live in ``data/``.  When the app runs on
+Vercel, custom values are kept in the project's private Blob store because a
+Vercel Function cannot persist writes to its local filesystem.
+"""
+
+import asyncio
+import json
+import os
+
+
+def enabled() -> bool:
+    """Return whether this request can use the connected Vercel Blob store."""
+    return bool(os.environ.get("VERCEL") and os.environ.get("BLOB_READ_WRITE_TOKEN"))
+
+
+def _pathname(server_id: str) -> str:
+    return f"cod-stat/custom/{server_id}.json"
+
+
+async def _read(server_id: str) -> dict | None:
+    from vercel.blob import AsyncBlobClient
+
+    async with AsyncBlobClient() as client:
+        result = await client.get(_pathname(server_id), access="private")
+        if result is None or result.status_code != 200 or result.stream is None:
+            return None
+        content = b"".join([chunk async for chunk in result.stream])
+    return json.loads(content.decode("utf-8"))
+
+
+async def _write(server_id: str, data: dict) -> None:
+    from vercel.blob import AsyncBlobClient
+
+    payload = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
+    async with AsyncBlobClient() as client:
+        await client.put(
+            _pathname(server_id),
+            payload,
+            access="private",
+            content_type="application/json",
+            overwrite=True,
+            cache_control_max_age=0,
+        )
+
+
+def read_custom(server_id: str) -> dict | None:
+    """Read custom data from Blob; ``None`` means there is no remote copy yet."""
+    if not enabled():
+        return None
+    try:
+        return asyncio.run(_read(server_id))
+    except Exception:
+        # A missing remote file should fall back to the version committed in data/.
+        return None
+
+
+def write_custom(server_id: str, data: dict) -> bool:
+    """Write custom data to Blob and return whether Blob storage was used."""
+    if not enabled():
+        return False
+    try:
+        asyncio.run(_write(server_id, data))
+    except Exception as exc:
+        raise RuntimeError("Could not save custom data to Vercel Blob.") from exc
+    return True

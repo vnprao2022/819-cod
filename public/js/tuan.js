@@ -105,10 +105,6 @@ function openAdminEditor(roleId) {
 }
 
 async function saveAdminChanges() {
-  if (VERCEL_MODE) {
-    document.getElementById('adm-save-status').innerHTML = '<span style="color:var(--warning)">This Vercel site is read-only. Edit on localhost, then push data to GitHub.</span>';
-    return;
-  }
   const fields = {
     deco: document.getElementById('adm-deco').value,
     red_artifact: document.getElementById('adm-artifact').checked,
@@ -252,7 +248,7 @@ document.getElementById('new-import-btn').addEventListener('click', () => {
 document.getElementById('admin-excel-file').addEventListener('change', e => { if (e.target.files.length) previewExcelImport(e.target.files[0]); });
 (async () => {
   if (VERCEL_MODE) {
-    document.getElementById('static-admin-notice').innerHTML = '<div class="alert alert-info">Vercel is in view-only mode. To edit custom stats, farm links, or datasets: open localhost, save changes, then push <strong>data</strong> to GitHub.</div>';
+    document.getElementById('static-admin-notice').innerHTML = '<div class="alert alert-info">Custom stats and farm links can be edited here. Importing or deleting Excel datasets is available only on localhost.</div>';
   }
   adminDataset = await initDatasetSelector('dataset-selector', '819', key => { adminDataset = key; loadAdminPlayers(); });
   loadAdminPlayers();

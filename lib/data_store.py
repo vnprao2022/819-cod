@@ -3,6 +3,8 @@
 import json
 from pathlib import Path
 
+from lib.blob_custom import read_custom, write_custom
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Imported datasets and custom player information stay outside the web assets.
 # Player pages are served through the Flask API, which reads this directory.
@@ -107,12 +109,17 @@ def save_dataset(dataset: dict) -> str:
 
 
 def get_custom(server_id: str) -> dict:
+    remote = read_custom(server_id)
+    if remote is not None:
+        return remote
     path = CUSTOM_DIR / f"{server_id}.json"
     return _read_json(path, {})
 
 
 def save_custom(server_id: str, data: dict):
     ensure_dirs()
+    if write_custom(server_id, data):
+        return
     _write_json(CUSTOM_DIR / f"{server_id}.json", data)
 
 

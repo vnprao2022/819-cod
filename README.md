@@ -60,6 +60,13 @@ Mở trình duyệt: http://localhost:5000
 python scripts/import_excel.py "819_2026-08-01_2026-08-10.xlsx"
 ```
 
+## Vercel
+
+- Import and delete Excel datasets on localhost only.
+- Custom player fields (deco, artifact, main troop, tier, notes and farm links)
+  can be edited on `tuan.html` after deployment. They are saved in the connected
+  private Vercel Blob store when `BLOB_READ_WRITE_TOKEN` is available.
+
 ## API Endpoints
 
 | Method | Endpoint | Mô tả |
