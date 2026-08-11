@@ -17,13 +17,19 @@ def is_vercel() -> bool:
     return bool(
         os.environ.get("VERCEL")
         or os.environ.get("VERCEL_ENV")
+        or os.environ.get("VERCEL_URL")
+        or os.environ.get("VERCEL_REGION")
         or os.environ.get("BLOB_STORE_ID")
     )
 
 
 def enabled() -> bool:
-    """Return whether this request can use the connected Vercel Blob store."""
-    return bool(is_vercel() and os.environ.get("BLOB_READ_WRITE_TOKEN"))
+    """Return whether this request can use the connected Vercel Blob store.
+
+    Connected private stores use Vercel's short-lived OIDC credentials in a
+    deployed Function. A BLOB_READ_WRITE_TOKEN is therefore optional there.
+    """
+    return is_vercel()
 
 
 def _pathname(server_id: str) -> str:

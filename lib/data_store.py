@@ -122,7 +122,7 @@ def save_custom(server_id: str, data: dict):
     if is_vercel():
         if not blob_enabled():
             raise RuntimeError(
-                "Vercel Blob is not connected. Add BLOB_READ_WRITE_TOKEN to this project's Production environment."
+                "Vercel Blob is not connected to this deployment. Redeploy the project after connecting the Blob store."
             )
         write_custom(server_id, data)
         return
