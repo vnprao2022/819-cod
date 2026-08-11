@@ -10,9 +10,20 @@ import json
 import os
 
 
+def is_vercel() -> bool:
+    """Return whether the code is running inside a Vercel deployment."""
+    # BLOB_STORE_ID is injected whenever this project is connected to Blob.
+    # It is the most reliable signal for Python functions across Vercel runtimes.
+    return bool(
+        os.environ.get("VERCEL")
+        or os.environ.get("VERCEL_ENV")
+        or os.environ.get("BLOB_STORE_ID")
+    )
+
+
 def enabled() -> bool:
     """Return whether this request can use the connected Vercel Blob store."""
-    return bool(os.environ.get("VERCEL") and os.environ.get("BLOB_READ_WRITE_TOKEN"))
+    return bool(is_vercel() and os.environ.get("BLOB_READ_WRITE_TOKEN"))
 
 
 def _pathname(server_id: str) -> str:

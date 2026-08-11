@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from lib.blob_custom import read_custom, write_custom
+from lib.blob_custom import enabled as blob_enabled, is_vercel, read_custom, write_custom
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Imported datasets and custom player information stay outside the web assets.
@@ -117,9 +117,16 @@ def get_custom(server_id: str) -> dict:
 
 
 def save_custom(server_id: str, data: dict):
-    ensure_dirs()
-    if write_custom(server_id, data):
+    # Vercel Functions have a read-only deployment filesystem.  Never fall
+    # back to data/custom here: that would become an opaque HTTP 500.
+    if is_vercel():
+        if not blob_enabled():
+            raise RuntimeError(
+                "Vercel Blob is not connected. Add BLOB_READ_WRITE_TOKEN to this project's Production environment."
+            )
+        write_custom(server_id, data)
         return
+    ensure_dirs()
     _write_json(CUSTOM_DIR / f"{server_id}.json", data)
 
 
