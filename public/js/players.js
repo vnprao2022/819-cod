@@ -39,7 +39,7 @@ function filterPlayers(query) {
     const id = String(p.role_id || '');
     const name = (p.name || '').toLowerCase();
     const matchesQuery = !q || id.includes(q) || name.includes(q);
-    const matchesStatus = migration === 'all' || (migration === 'migrated' ? p.migrated : !p.migrated);
+    const matchesStatus = migration === 'all' || getPlayerStatus(p) === migration;
     return matchesQuery && matchesStatus;
   });
   const count = document.getElementById('account-count');
@@ -113,7 +113,11 @@ function renderTable() {
                 if (col === 'role_id') {
                   return `<td class="role-id number" onclick="location.href='/player.html?id=${p.role_id}'">${p.role_id}</td>`;
                 }
-                if (col === 'name') return `<td class="name" onclick="location.href='/player.html?id=${p.role_id}'" style="cursor:pointer">${p.name || '-'} ${p.migrated ? `<span class="badge badge-migrated">${t('migrated_players')}</span>` : ''}</td>`;
+                if (col === 'name') {
+                  const status = getPlayerStatus(p);
+                  const badge = status === 'active' ? '' : `<span class="badge badge-status badge-${status}">${getPlayerStatusLabel(status)}</span>`;
+                  return `<td class="name" onclick="location.href='/player.html?id=${p.role_id}'" style="cursor:pointer">${p.name || '-'} ${badge}</td>`;
+                }
                 const cls = NUMERIC_FIELDS.has(col) || col === 'mp_ratio' ? 'number' : '';
                 const editable = isAdmin && CUSTOM_FIELDS.includes(col);
                 return `<td class="${cls}${editable ? ' editable-cell' : ''}">${renderCell(col, p)}</td>`;
@@ -234,6 +238,8 @@ document.addEventListener('click', (e) => {
   document.querySelector('#migration-filter option[value="all"]').textContent = t('all_players');
   document.querySelector('#migration-filter option[value="active"]').textContent = t('active_players');
   document.querySelector('#migration-filter option[value="migrated"]').textContent = t('migrated_players');
+  document.querySelector('#migration-filter option[value="quit"]').textContent = t('quit_players');
+  document.querySelector('#migration-filter option[value="rest_ticket"]').textContent = t('rest_ticket_players');
   await initServerSelector('server-selector', onServerChange);
   if (currentServer) {
     currentDataset = await initDatasetSelector('dataset-selector', currentServer, onDatasetChange);

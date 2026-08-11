@@ -223,8 +223,24 @@ const CUSTOM_FIELDS = ['deco', 'red_artifact', 'main', 'tier', 'note'];
 function enrichPlayer(p) {
   return {
     ...p,
+    status: getPlayerStatus(p),
     mp_ratio: calcMP(p.merit, p.power),
   };
+}
+
+const PLAYER_STATUSES = ['active', 'migrated', 'quit', 'rest_ticket'];
+
+function getPlayerStatus(player) {
+  const status = String(player.status || '').trim().toLowerCase();
+  if (PLAYER_STATUSES.includes(status)) return status;
+  return player.migrated ? 'migrated' : 'active';
+}
+
+function getPlayerStatusLabel(playerOrStatus) {
+  const status = typeof playerOrStatus === 'string'
+    ? getPlayerStatus({ status: playerOrStatus })
+    : getPlayerStatus(playerOrStatus);
+  return t(`${status}_players`);
 }
 
 function renderSidebar(activePage) {

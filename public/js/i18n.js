@@ -2,6 +2,8 @@
 
 const I18N = {
   en: {
+    quit_players: 'Quit',
+    rest_ticket_players: 'Rest ticket given',
     app_title: 'Call of Dragons',
     nav_dashboard: 'Dashboard',
     nav_rankings: 'Rankings',
@@ -168,6 +170,8 @@ const I18N = {
   },
 
   vi: {
+    quit_players: 'Nghỉ game',
+    rest_ticket_players: 'Đã tặng vé nghỉ ngơi',
     app_title: 'Call of Dragons',
     nav_dashboard: 'Tổng quan',
     nav_rankings: 'Xếp hạng',
@@ -326,6 +330,8 @@ const I18N = {
   },
 
   ko: {
+    quit_players: '게임 종료',
+    rest_ticket_players: '휴식권 지급',
     app_title: 'Call of Dragons',
     nav_dashboard: '대시보드',
     nav_rankings: '순위',

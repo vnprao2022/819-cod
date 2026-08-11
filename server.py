@@ -139,6 +139,8 @@ def api_update_custom(server_id, role_id):
         return jsonify({"error": "No data provided"}), 400
     allowed = {"deco", "red_artifact", "main", "tier", "note", "team", "status", "farm_role_ids"}
     filtered = {k: v for k, v in data.items() if k in allowed}
+    if "status" in filtered and filtered["status"] not in {"active", "migrated", "quit", "rest_ticket"}:
+        return jsonify({"error": "Invalid player status"}), 400
     try:
         result = update_player_custom(server_id, role_id, filtered)
     except RuntimeError as exc:

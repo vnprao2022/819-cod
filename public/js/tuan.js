@@ -30,7 +30,7 @@ function renderAdminRanking() {
       <td class="number">${p.rank ?? '-'}</td><td class="role-id number">${p.role_id}</td><td class="name">${p.name || '-'}</td>
       <td class="number">${formatNumber(p.power)}</td><td class="number">${formatNumber(p.merit)}</td><td class="number">${formatMP(p.merit, p.power)}</td>
       <td>${p.deco || '-'}</td><td>${p.red_artifact ? 'Yes' : 'No'}</td><td>${getMainLabel(p.main)}</td><td>${renderTier(p.tier)}</td>
-      <td>${p.migrated ? '<span class="badge badge-migrated">Migrated</span>' : (p.status || 'Active')}</td>
+      <td><span class="badge badge-status badge-${getPlayerStatus(p)}">${getPlayerStatusLabel(p)}</span></td>
     </tr>`).join('')}</tbody>
   </table><div class="pagination"><div class="pagination-info">Showing ${start + 1}–${Math.min(start + ADMIN_PAGE_SIZE, adminFilteredPlayers.length)} of ${adminFilteredPlayers.length}</div>
     <div class="pagination-buttons"><button id="admin-prev" ${adminPage === 1 ? 'disabled' : ''}>← Previous</button><button class="active">${adminPage} / ${totalPages}</button><button id="admin-next" ${adminPage === totalPages ? 'disabled' : ''}>Next →</button></div></div></div>`;
@@ -88,7 +88,12 @@ function openAdminEditor(roleId) {
       <div class="form-row"><label>Main troop</label><select id="adm-main"><option value="">-</option>${getMainOptions().map(o => `<option value="${o.value}" ${editingPlayer.main === o.value ? 'selected' : ''}>${o.label}</option>`).join('')}</select></div>
       <div class="form-row"><label>Tier</label><select id="adm-tier"><option value="" ${!editingPlayer.tier ? 'selected' : ''}>-</option><option value="T4" ${editingPlayer.tier === 'T4' ? 'selected' : ''}>T4</option><option value="T5" ${editingPlayer.tier === 'T5' ? 'selected' : ''}>T5</option></select></div>
       <div class="form-row"><label>Team</label><input id="adm-team" value="${editingPlayer.team || ''}"></div>
-      <div class="form-row"><label>Status</label><input id="adm-status" value="${editingPlayer.status || ''}"></div>
+      <div class="form-row"><label>Status</label><select id="adm-status">
+        <option value="active" ${getPlayerStatus(editingPlayer) === 'active' ? 'selected' : ''}>Active</option>
+        <option value="migrated" ${getPlayerStatus(editingPlayer) === 'migrated' ? 'selected' : ''}>Migrated</option>
+        <option value="quit" ${getPlayerStatus(editingPlayer) === 'quit' ? 'selected' : ''}>Quit</option>
+        <option value="rest_ticket" ${getPlayerStatus(editingPlayer) === 'rest_ticket' ? 'selected' : ''}>Rest ticket given</option>
+      </select></div>
       <div class="form-row"><label>Note</label><input id="adm-note" value="${editingPlayer.note || ''}"></div>
       <div class="farm-link-section"><div class="farm-link-title"><div><h4>Farm Accounts</h4><p>Link one or more farms by player name or ID.</p></div><button type="button" class="btn btn-primary" id="add-farm">＋ Add farm</button></div>
         <div id="linked-farms" class="farm-chip-list"></div>

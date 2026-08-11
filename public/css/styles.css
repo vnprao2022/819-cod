@@ -329,7 +329,12 @@ td.number { text-align: right; font-variant-numeric: tabular-nums; }
 
 .badge-yes { background: rgba(34, 197, 94, 0.15); color: var(--success); }
 .badge-no { background: rgba(136, 146, 164, 0.15); color: var(--text-muted); }
-.badge-migrated { background: rgba(239, 68, 68, 0.1); color: #b42318; margin-left: 0.4rem; }
+.badge-migrated { background: rgba(239, 68, 68, 0.1); color: #b42318; }
+.badge-status { white-space: nowrap; }
+.name .badge-status { margin-left: 0.4rem; }
+.badge-active { background: rgba(34, 197, 94, 0.12); color: #15803d; }
+.badge-quit { background: rgba(100, 116, 139, 0.14); color: #475569; }
+.badge-rest_ticket { background: rgba(245, 158, 11, 0.14); color: #b45309; }
 .tier-t4 { background: #ede9fe; color: #7c3aed; border: 1px solid #c4b5fd; }
 .tier-t5 { background: #fef3c7; color: #b77905; border: 1px solid #f6c453; }
 .tier-none { color: var(--text-muted); }
