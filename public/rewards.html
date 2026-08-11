@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekly Rewards - Call of Dragons Stats</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <div id="sidebar"></div>
+    <main class="main-content">
+      <div class="page-header"><h2>Weekly Rewards</h2><p class="subtitle" id="header-subtitle"></p></div>
+      <div class="controls-bar">
+        <div id="dataset-selector"></div>
+        <div class="control-group"><label id="criterion-label"></label><select id="criterion"></select></div>
+        <div class="control-group"><label id="farm-count-label"></label><select id="farm-count"></select></div>
+        <button class="btn btn-primary btn-sm" id="calculate-btn"></button>
+      </div>
+      <div id="rewards-content"></div>
+    </main>
+  </div>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/rewards.js"></script>
+</body>
+</html>

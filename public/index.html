@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Call of Dragons Stats</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <div id="sidebar"></div>
+    <main class="main-content">
+      <div class="page-header">
+        <h2>Dashboard</h2>
+        <p class="subtitle" id="header-subtitle">Select a server and dataset to view stats</p>
+      </div>
+
+      <div class="controls-bar" id="controls">
+        <div id="server-selector"></div>
+        <div id="dataset-selector"></div>
+      </div>
+
+      <div id="dashboard-content">
+        <div class="empty-state">
+          <div class="icon">📊</div>
+          <p>Import an Excel file or select a server to get started.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

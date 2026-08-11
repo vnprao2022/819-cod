@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <main class="standalone-admin">
+    <div class="page-header"><h2>Account Management</h2><p class="subtitle">Server 819 · Custom stats and farm linking by Player ID</p></div>
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-admin-tab="players">Accounts</button>
+      <button class="admin-tab" data-admin-tab="datasets">Import Excel & Datasets</button>
+    </div>
+    <section id="admin-tab-players">
+      <div class="controls-bar">
+        <div id="dataset-selector"></div>
+        <div class="control-group admin-search"><label>Player</label><input type="search" id="admin-player-search" placeholder="Search name or Player ID..."></div>
+      </div>
+      <div id="admin-ranking"></div>
+      <div id="admin-editor"></div>
+    </section>
+    <section id="admin-tab-datasets" hidden>
+      <div class="dataset-admin-header">
+        <div><h3>Imported Datasets</h3><p>Import, replace or delete Excel data. Custom player data is stored separately and will be preserved.</p></div>
+        <button class="btn btn-primary" id="new-import-btn">＋ Import Excel</button>
+      </div>
+      <input type="file" id="admin-excel-file" accept=".xlsx" hidden>
+      <div id="admin-import-panel"></div>
+      <div id="admin-datasets-list"></div>
+    </section>
+  </main>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/tuan.js"></script>
+</body>
+</html>

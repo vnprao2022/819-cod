@@ -1,0 +1,48 @@
+{
+  "11606593": {
+    "deco": "",
+    "red_artifact": true,
+    "main": "mage",
+    "team": "",
+    "status": "",
+    "note": "",
+    "farm_role_ids": [
+      "12148101"
+    ],
+    "tier": "T5"
+  },
+  "10354647": {
+    "deco": "15.8",
+    "red_artifact": true,
+    "main": "infantry",
+    "team": "",
+    "status": "",
+    "note": "",
+    "farm_role_ids": [
+      "16217219",
+      "22906374",
+      "23552131",
+      "10213346",
+      "24432698",
+      "24758554",
+      "25321955",
+      "25322282"
+    ],
+    "tier": "T5"
+  },
+  "22801809": {
+    "deco": "19.6",
+    "red_artifact": false,
+    "main": "",
+    "tier": "T5",
+    "team": "",
+    "status": "",
+    "note": "",
+    "farm_role_ids": [
+      "22988945",
+      "22988969",
+      "24522664",
+      "17185678"
+    ]
+  }
+}

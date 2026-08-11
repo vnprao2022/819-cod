@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player Detail - Call of Dragons Stats</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <div id="sidebar"></div>
+    <main class="main-content">
+      <div class="page-header">
+        <h2>Player Detail</h2>
+        <p class="subtitle">View player stats and history</p>
+      </div>
+
+      <div class="controls-bar" id="controls">
+        <div id="server-selector"></div>
+        <div class="control-group">
+          <label>Player ID</label>
+          <input type="search" id="player-id-input" placeholder="Search name or Player ID...">
+        </div>
+        <button class="btn btn-primary btn-sm" id="search-btn">Search</button>
+      </div>
+      <div id="player-search-results"></div>
+
+      <div id="player-content">
+        <div class="empty-state">
+          <div class="icon">🔍</div>
+          <p>Enter a Player ID to view details and history.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/player.js"></script>
+</body>
+</html>

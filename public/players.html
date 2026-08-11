@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rankings - Call of Dragons Stats</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <div id="sidebar"></div>
+    <main class="main-content">
+      <div class="page-header">
+        <h2>Player Rankings</h2>
+        <p class="subtitle" id="header-subtitle"></p>
+      </div>
+
+      <div class="controls-bar" id="controls">
+        <div id="server-selector"></div>
+        <div id="dataset-selector"></div>
+        <div class="control-group">
+          <label>Search</label>
+          <input type="search" id="search-input" placeholder="Name or Player ID...">
+        </div>
+        <div class="control-group">
+          <label id="migration-filter-label">Status</label>
+          <select id="migration-filter">
+            <option value="all">All players</option>
+            <option value="active" selected>Active</option>
+            <option value="migrated">Migrated</option>
+          </select>
+        </div>
+        <div class="column-picker">
+          <button class="btn btn-secondary btn-sm" id="column-toggle">Columns ▾</button>
+          <div class="column-picker-dropdown" id="column-dropdown"></div>
+        </div>
+      </div>
+
+      <div id="table-content"></div>
+    </main>
+  </div>
+
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/players.js"></script>
+</body>
+</html>
