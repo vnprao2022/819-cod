@@ -9,13 +9,23 @@ Excel (.xlsx) → Import → JSON → Website
 ```
 
 ```
+data/
+  datasets/
+    819/
+      2026-08-01_2026-08-10.json
+  custom/
+    819.json
+
 public/
-  data/
-    datasets/
-      819/
-        2026-08-01_2026-08-10.json
-    custom/
-      819.json
+  css/
+  js/
+  index.html
+  players.html
+  player.html
+  rewards.html
+  settings.html
+  import.html
+  tuan.html
 ```
 
 ## Yêu cầu

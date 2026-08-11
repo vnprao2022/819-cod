@@ -4,8 +4,9 @@ import json
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-# Public JSON is committed and deployed with the static website.
-DATA_DIR = BASE_DIR / "public" / "data"
+# Imported datasets and custom player information stay outside the web assets.
+# Player pages are served through the Flask API, which reads this directory.
+DATA_DIR = BASE_DIR / "data"
 DATASETS_DIR = DATA_DIR / "datasets"
 CUSTOM_DIR = DATA_DIR / "custom"
 

@@ -59,8 +59,8 @@ async function loadSettings() {
 
       <div class="preview-card" style="margin-top:1.5rem">
         <h4>Data Storage</h4>
-        <div class="preview-row"><span class="key">Datasets path</span><span class="val">public/data/datasets/${currentServer}/</span></div>
-        <div class="preview-row"><span class="key">Custom data path</span><span class="val">public/data/custom/${currentServer}.json</span></div>
+        <div class="preview-row"><span class="key">Datasets path</span><span class="val">data/datasets/${currentServer}/</span></div>
+        <div class="preview-row"><span class="key">Custom data path</span><span class="val">data/custom/${currentServer}.json</span></div>
       </div>
     `;
   } catch (err) {

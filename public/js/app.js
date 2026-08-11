@@ -1,6 +1,7 @@
-/** Shared API client and static-data fallback for Vercel deployments. */
+/** Shared API client. Vercel serves read-only data through the Flask API. */
 
-const STATIC_MODE = location.hostname.endsWith('vercel.app');
+const VERCEL_MODE = location.hostname.endsWith('vercel.app');
+const STATIC_MODE = false;
 
 const StaticData = {
   async json(path) {
@@ -99,7 +100,7 @@ const API = {
   },
 
   async put(path, data) {
-    if (STATIC_MODE) throw new Error('Editing data is available only on localhost. Save locally, then push public/data to GitHub.');
+    if (VERCEL_MODE) throw new Error('Editing data is available only on localhost. Save locally, then push data to GitHub.');
     const res = await fetch(`${this.base}${path}`, {
       method: 'PUT',
       headers: this.authHeaders({ 'Content-Type': 'application/json' }),
@@ -113,7 +114,7 @@ const API = {
   },
 
   async delete(path) {
-    if (STATIC_MODE) throw new Error('Deleting datasets is available only on localhost.');
+    if (VERCEL_MODE) throw new Error('Deleting datasets is available only on localhost.');
     const res = await fetch(`${this.base}${path}`, { method: 'DELETE' });
     const data = await res.json().catch(() => ({ error: res.statusText }));
     if (!res.ok) throw new Error(data.error || res.statusText);
@@ -132,7 +133,7 @@ const API = {
   },
 
   async upload(path, formData) {
-    if (STATIC_MODE) throw new Error('Importing Excel is available only on localhost.');
+    if (VERCEL_MODE) throw new Error('Importing Excel is available only on localhost.');
     const res = await fetch(`${this.base}${path}`, {
       method: 'POST',
       headers: this.authHeaders(),
@@ -160,7 +161,7 @@ const API = {
   },
 
   async checkAdmin() {
-    if (STATIC_MODE) return false;
+    if (VERCEL_MODE) return false;
     const token = this.getAdminToken();
     if (!token) return false;
     try {
