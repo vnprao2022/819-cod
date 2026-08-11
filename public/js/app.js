@@ -1,4 +1,71 @@
-/** Shared API client and utilities */
+/** Shared API client and static-data fallback for Vercel deployments. */
+
+const STATIC_MODE = location.hostname.endsWith('vercel.app');
+
+const StaticData = {
+  async json(path) {
+    const response = await fetch(path, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Could not load ${path}`);
+    return response.json();
+  },
+  async datasets(serverId) {
+    return this.json(`/data/datasets/${serverId}/index.json`);
+  },
+  async dataset(serverId, key) {
+    return this.json(`/data/datasets/${serverId}/${key}.json`);
+  },
+  async custom(serverId) {
+    return this.json(`/data/custom/${serverId}.json`).catch(() => ({}));
+  },
+  async mergedDataset(serverId, key) {
+    const [dataset, custom, datasets] = await Promise.all([this.dataset(serverId, key), this.custom(serverId), this.datasets(serverId)]);
+    const latest = datasets[datasets.length - 1];
+    const latestDataset = latest ? await this.dataset(serverId, latest.key) : dataset;
+    const latestIds = new Set((latestDataset.players || []).map(p => String(p.role_id)));
+    const players = (dataset.players || []).map(p => ({ ...p, ...(custom[String(p.role_id)] || {}), migrated: !latestIds.has(String(p.role_id)) }));
+    if (latest && key === latest.key) {
+      const included = new Set(players.map(p => String(p.role_id)));
+      for (const older of [...datasets].slice(0, -1).reverse()) {
+        const oldDataset = await this.dataset(serverId, older.key);
+        for (const p of oldDataset.players || []) {
+          const id = String(p.role_id);
+          if (!included.has(id)) { included.add(id); players.push({ ...p, ...(custom[id] || {}), migrated: true }); }
+        }
+      }
+    }
+    return { ...dataset, players };
+  },
+  stats(players) {
+    const values = field => players.map(p => Number(p[field]) || 0);
+    const powers = values('power');
+    const sorted = [...powers].sort((a, b) => b - a);
+    const bucket = (min, max = Infinity) => powers.filter(p => p >= min && p < max).length;
+    return {
+      total_players: players.length, total_power: powers.reduce((a, b) => a + b, 0),
+      top_300_power: sorted.slice(0, 300).reduce((a, b) => a + b, 0), top_200_power: sorted.slice(0, 200).reduce((a, b) => a + b, 0),
+      average_power: powers.length ? Math.round(powers.reduce((a, b) => a + b, 0) / powers.length) : 0, highest_power: Math.max(0, ...powers),
+      total_deaths: values('deaths').reduce((a, b) => a + b, 0), total_merit: values('merit').reduce((a, b) => a + b, 0),
+      total_healing: values('healing').reduce((a, b) => a + b, 0), total_gathering: values('gathering').reduce((a, b) => a + b, 0),
+      power_buckets: { power_0_20: bucket(0, 20e6), power_20_40: bucket(20e6, 40e6), power_40_60: bucket(40e6, 60e6), power_60_80: bucket(60e6, 80e6), power_80_100: bucket(80e6, 100e6), power_over_100: bucket(100e6) },
+    };
+  },
+  async get(path) {
+    if (path === '/api/servers') return this.json('/data/servers.json');
+    let match = path.match(/^\/api\/servers\/([^/]+)\/datasets$/);
+    if (match) return this.datasets(match[1]);
+    match = path.match(/^\/api\/servers\/([^/]+)\/dataset\/([^/]+)$/);
+    if (match) return this.mergedDataset(match[1], match[2]);
+    match = path.match(/^\/api\/servers\/([^/]+)\/dashboard\/([^/]+)$/);
+    if (match) { const data = await this.dataset(match[1], match[2]); return { server_id: match[1], date_from: data.date_from, date_to: data.date_to, stats: this.stats(data.players || []) }; }
+    match = path.match(/^\/api\/servers\/([^/]+)\/custom$/);
+    if (match) return this.custom(match[1]);
+    match = path.match(/^\/api\/servers\/([^/]+)\/player\/([^/]+)\/history$/);
+    if (match) { const datasets = await this.datasets(match[1]); const id = decodeURIComponent(match[2]); const history = []; for (const ds of datasets) { const data = await this.dataset(match[1], ds.key); const player = (data.players || []).find(p => String(p.role_id) === id); if (player) history.push({ dataset_key: ds.key, date_from: data.date_from, date_to: data.date_to, ...player }); } return history; }
+    match = path.match(/^\/api\/servers\/([^/]+)\/player\/([^?]+)(?:\?dataset=([^&]+))?$/);
+    if (match) { const data = await this.mergedDataset(match[1], decodeURIComponent(match[3] || Store.getDataset())); const player = data.players.find(p => String(p.role_id) === decodeURIComponent(match[2])); if (player) return { ...player, _custom: (await this.custom(match[1]))[String(player.role_id)] || {} }; throw new Error('Player not found'); }
+    throw new Error('This action is available only on localhost.');
+  },
+};
 
 const API = {
   base: '',
@@ -22,6 +89,7 @@ const API = {
   },
 
   async get(path) {
+    if (STATIC_MODE) return StaticData.get(path);
     const res = await fetch(`${this.base}${path}`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: res.statusText }));

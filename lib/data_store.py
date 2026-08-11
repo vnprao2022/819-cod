@@ -10,6 +10,13 @@ DATASETS_DIR = DATA_DIR / "datasets"
 CUSTOM_DIR = DATA_DIR / "custom"
 
 
+def _write_indexes():
+    servers = list_servers()
+    _write_json(DATA_DIR / "servers.json", servers)
+    for server_id in servers:
+        _write_json(DATASETS_DIR / server_id / "index.json", list_datasets(server_id))
+
+
 def ensure_dirs():
     DATASETS_DIR.mkdir(parents=True, exist_ok=True)
     CUSTOM_DIR.mkdir(parents=True, exist_ok=True)
@@ -47,6 +54,8 @@ def list_datasets(server_id: str) -> list[dict]:
         return []
     datasets = []
     for f in sorted(server_dir.glob("*.json")):
+        if f.name == "index.json":
+            continue
         data = _read_json(f)
         datasets.append({
             "key": f.stem,
@@ -73,6 +82,7 @@ def delete_dataset(server_id: str, dataset_key: str) -> bool:
     if not path.exists():
         return False
     path.unlink()
+    _write_indexes()
     return True
 
 
@@ -91,6 +101,7 @@ def save_dataset(dataset: dict) -> str:
         "players": dataset["players"],
     }
     _write_json(path, save_data)
+    _write_indexes()
     return str(path)
 
 
