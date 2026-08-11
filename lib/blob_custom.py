@@ -8,6 +8,7 @@ Vercel Function cannot persist writes to its local filesystem.
 import asyncio
 import json
 import os
+from pathlib import Path
 
 
 def is_vercel() -> bool:
@@ -20,6 +21,8 @@ def is_vercel() -> bool:
         or os.environ.get("VERCEL_URL")
         or os.environ.get("VERCEL_REGION")
         or os.environ.get("BLOB_STORE_ID")
+        or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+        or Path("/var/task").exists()
     )
 
 
