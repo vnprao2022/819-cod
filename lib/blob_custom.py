@@ -55,10 +55,9 @@ async def _read(server_id: str) -> dict | None:
             )
         except TypeError:
             result = await client.get(_pathname(server_id), access="private")
-        if result is None or result.status_code != 200 or result.stream is None:
+        if result is None or result.status_code != 200 or result.content is None:
             return None
-        content = b"".join([chunk async for chunk in result.stream])
-    return json.loads(content.decode("utf-8"))
+    return json.loads(result.content.decode("utf-8"))
 
 
 async def _write(server_id: str, data: dict) -> None:
