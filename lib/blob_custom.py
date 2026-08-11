@@ -34,7 +34,14 @@ async def _read(server_id: str) -> dict | None:
     from vercel.blob import AsyncBlobClient
 
     async with AsyncBlobClient() as client:
-        result = await client.get(_pathname(server_id), access="private")
+        # Read the just-saved value instead of a CDN-cached copy.  Older SDK
+        # releases do not support use_cache, so retain a compatible fallback.
+        try:
+            result = await client.get(
+                _pathname(server_id), access="private", use_cache=False
+            )
+        except TypeError:
+            result = await client.get(_pathname(server_id), access="private")
         if result is None or result.status_code != 200 or result.stream is None:
             return None
         content = b"".join([chunk async for chunk in result.stream])
