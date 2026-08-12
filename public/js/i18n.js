@@ -62,15 +62,12 @@ const I18N = {
 
     // Player
     player_detail: 'Player Detail',
-    player_subtitle: 'View player stats and history',
+    player_subtitle: 'View player stats',
     player_id: 'Player ID',
     enter_player_id: 'Enter role_id...',
     search_btn: 'Search',
-    player_empty: 'Enter a Player ID to view details and history.',
+    player_empty: 'Enter a Player ID to view details.',
     custom_data: 'Custom Data',
-    history: 'History',
-    history_datasets: 'datasets',
-    history_one: 'Only one dataset available. Import more Excel files to see history charts.',
     unknown: 'Unknown',
 
     // Custom fields
@@ -157,14 +154,6 @@ const I18N = {
     active_players: 'Active',
     migrated_players: 'Migrated',
 
-    // Charts
-    power_history: 'Power History',
-    rank_history: 'Rank History',
-    deaths_history: 'Deaths History',
-    merit_history: 'Merit History',
-    healing_history: 'Healing History',
-    gathering_history: 'Gathering History',
-
     edit: 'Edit',
     admin_required: 'Admin login required to edit.',
   },
@@ -227,15 +216,12 @@ const I18N = {
     players_count: 'tài khoản',
 
     player_detail: 'Chi tiết người chơi',
-    player_subtitle: 'Xem thống kê và lịch sử',
+    player_subtitle: 'Xem thống kê người chơi',
     player_id: 'ID Nhân Vật',
     enter_player_id: 'Nhập role_id...',
     search_btn: 'Tìm',
     player_empty: 'Nhập ID người chơi để xem chi tiết.',
     custom_data: 'Dữ liệu tùy chỉnh',
-    history: 'Lịch sử',
-    history_datasets: 'khoảng thời gian',
-    history_one: 'Chỉ có 1 dataset. Import thêm file Excel để xem biểu đồ lịch sử.',
     unknown: 'Không rõ',
 
     deco: 'Deco (%)',
@@ -318,13 +304,6 @@ const I18N = {
     active_players: 'Đang hoạt động',
     migrated_players: 'Đã di cư',
 
-    power_history: 'Lịch sử Lực Chiến',
-    rank_history: 'Lịch sử Hạng',
-    deaths_history: 'Lịch sử Tử Vong',
-    merit_history: 'Lịch sử Công Trạng',
-    healing_history: 'Lịch sử Trị Liệu',
-    gathering_history: 'Lịch sử Thu Thập',
-
     edit: 'Sửa',
     admin_required: 'Cần đăng nhập Admin để chỉnh sửa.',
   },
@@ -387,15 +366,12 @@ const I18N = {
     players_count: '계정',
 
     player_detail: '플레이어 상세',
-    player_subtitle: '통계 및 기록 보기',
+    player_subtitle: '플레이어 통계 보기',
     player_id: '플레이어 ID',
     enter_player_id: 'role_id 입력...',
     search_btn: '검색',
     player_empty: '플레이어 ID를 입력하세요.',
     custom_data: '커스텀 데이터',
-    history: '기록',
-    history_datasets: '데이터셋',
-    history_one: '데이터셋이 1개뿐입니다. 더 많은 Excel 파일을 가져오세요.',
     unknown: '알 수 없음',
 
     deco: 'Deco (%)',
@@ -477,13 +453,6 @@ const I18N = {
     all_players: '전체 플레이어',
     active_players: '활동 중',
     migrated_players: '이주함',
-
-    power_history: '전투력 기록',
-    rank_history: '순위 기록',
-    deaths_history: '사망 기록',
-    merit_history: '공훈 기록',
-    healing_history: '치유 기록',
-    gathering_history: '채집 기록',
 
     edit: '편집',
     admin_required: '편집하려면 관리자 로그인이 필요합니다.',

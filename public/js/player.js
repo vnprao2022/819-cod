@@ -1,5 +1,4 @@
 let currentServer = Store.getServer();
-let charts = [];
 let isAdmin = false;
 
 const DETAIL_FIELDS = [
@@ -8,68 +7,6 @@ const DETAIL_FIELDS = [
   'resource_aid', 'behemoth_wins', 'alliance_help',
   'merit_infantry', 'merit_cavalry', 'merit_archer', 'merit_mage', 'merit_other',
 ];
-
-const HISTORY_CHARTS = [
-  { field: 'power', labelKey: 'power_history', color: '#c8960c' },
-  { field: 'rank', labelKey: 'rank_history', color: '#3b82f6' },
-  { field: 'deaths', labelKey: 'deaths_history', color: '#ef4444' },
-  { field: 'merit', labelKey: 'merit_history', color: '#22c55e' },
-  { field: 'healing', labelKey: 'healing_history', color: '#a855f7' },
-  { field: 'gathering', labelKey: 'gathering_history', color: '#f59e0b' },
-];
-
-function destroyCharts() {
-  charts.forEach(c => c.destroy());
-  charts = [];
-}
-
-function renderCharts(history) {
-  return HISTORY_CHARTS.map(chartDef => {
-    const values = history.map(h => Number(h[chartDef.field]) || 0);
-    const hasData = values.some(v => v > 0);
-    if (!hasData && chartDef.field !== 'power') return '';
-    return `
-      <div class="chart-section">
-        <h4>${t(chartDef.labelKey)}</h4>
-        <div class="chart-container"><canvas id="chart-${chartDef.field}"></canvas></div>
-      </div>
-    `;
-  }).join('');
-}
-
-function initCharts(history) {
-  const labels = history.map(h => formatDateRange(h.date_from, h.date_to));
-
-  HISTORY_CHARTS.forEach(chartDef => {
-    const canvas = document.getElementById(`chart-${chartDef.field}`);
-    if (!canvas) return;
-    const values = history.map(h => Number(h[chartDef.field]) || 0);
-    charts.push(new Chart(canvas, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          label: fieldLabel(chartDef.field),
-          data: values,
-          borderColor: chartDef.color,
-          backgroundColor: chartDef.color + '20',
-          fill: true, tension: 0.3, pointRadius: 4, pointHoverRadius: 6,
-        }],
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: (ctx) => `${fieldLabel(chartDef.field)}: ${formatNumber(ctx.raw)}` } },
-        },
-        scales: {
-          x: { ticks: { color: '#8892a4', maxRotation: 45 }, grid: { color: '#2a3548' } },
-          y: { ticks: { color: '#8892a4', callback: (v) => formatNumber(v) }, grid: { color: '#2a3548' } },
-        },
-      },
-    }));
-  });
-}
 
 function renderCustomEditor(roleId, custom) {
   if (!isAdmin) return '';
@@ -128,10 +65,7 @@ async function loadPlayer(roleId) {
   showLoading(container);
 
   try {
-    const [player, history] = await Promise.all([
-      API.get(`/api/servers/${currentServer}/player/${roleId}?dataset=${Store.getDataset()}`),
-      API.get(`/api/servers/${currentServer}/player/${roleId}/history`).catch(() => []),
-    ]);
+    const player = await API.get(`/api/servers/${currentServer}/player/${roleId}?dataset=${Store.getDataset()}`);
 
     const enriched = enrichPlayer(player);
     const custom = player._custom || {};
@@ -175,17 +109,7 @@ async function loadPlayer(roleId) {
         </table></div>
       ` : `<div class="alert alert-info">${t('no_farms')}</div>`}
 
-      ${history.length > 1 ? `
-        <h3 style="font-family:var(--font-display);margin-bottom:1rem;color:var(--text-secondary)">
-          ${t('history').toUpperCase()} (${history.length} ${t('history_datasets')})
-        </h3>
-        ${renderCharts(history)}
-      ` : history.length === 1 ? `
-        <div class="alert alert-info">${t('history_one')}</div>
-      ` : ''}
     `;
-
-    if (history.length > 1) initCharts(history);
 
     const saveBtn = document.getElementById('save-custom-btn');
     if (saveBtn) {

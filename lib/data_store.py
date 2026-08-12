@@ -167,25 +167,6 @@ def get_player(server_id: str, role_id: str, dataset_key: str | None = None) -> 
     return get_player(server_id, role_id, latest)
 
 
-def get_player_history(server_id: str, role_id: str) -> list[dict]:
-    datasets = list_datasets(server_id)
-    history = []
-    for ds in datasets:
-        dataset = get_dataset(server_id, ds["key"])
-        if not dataset:
-            continue
-        for p in dataset.get("players", []):
-            if str(p.get("role_id")) == str(role_id):
-                history.append({
-                    "dataset_key": ds["key"],
-                    "date_from": dataset["date_from"],
-                    "date_to": dataset["date_to"],
-                    **{k: v for k, v in p.items() if k != "role_id"},
-                })
-                break
-    return history
-
-
 def get_dashboard_stats(server_id: str, dataset_key: str) -> dict:
     dataset = get_dataset(server_id, dataset_key)
     if not dataset:

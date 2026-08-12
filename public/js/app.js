@@ -60,8 +60,6 @@ const StaticData = {
     if (match) { const data = await this.dataset(match[1], match[2]); return { server_id: match[1], date_from: data.date_from, date_to: data.date_to, stats: this.stats(data.players || []) }; }
     match = path.match(/^\/api\/servers\/([^/]+)\/custom$/);
     if (match) return this.custom(match[1]);
-    match = path.match(/^\/api\/servers\/([^/]+)\/player\/([^/]+)\/history$/);
-    if (match) { const datasets = await this.datasets(match[1]); const id = decodeURIComponent(match[2]); const history = []; for (const ds of datasets) { const data = await this.dataset(match[1], ds.key); const player = (data.players || []).find(p => String(p.role_id) === id); if (player) history.push({ dataset_key: ds.key, date_from: data.date_from, date_to: data.date_to, ...player }); } return history; }
     match = path.match(/^\/api\/servers\/([^/]+)\/player\/([^?]+)(?:\?dataset=([^&]+))?$/);
     if (match) { const data = await this.mergedDataset(match[1], decodeURIComponent(match[3] || Store.getDataset())); const player = data.players.find(p => String(p.role_id) === decodeURIComponent(match[2])); if (player) return { ...player, _custom: (await this.custom(match[1]))[String(player.role_id)] || {} }; throw new Error('Player not found'); }
     throw new Error('This action is available only on localhost.');

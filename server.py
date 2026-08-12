@@ -15,7 +15,6 @@ from lib.data_store import (
     get_dashboard_stats,
     get_dataset,
     get_player,
-    get_player_history,
     list_datasets,
     list_servers,
     save_custom,
@@ -115,14 +114,6 @@ def api_player(server_id, role_id):
     if not player:
         return jsonify({"error": "Player not found"}), 404
     return jsonify(player)
-
-
-@app.route("/api/servers/<server_id>/player/<role_id>/history")
-def api_player_history(server_id, role_id):
-    history = get_player_history(server_id, role_id)
-    if not history:
-        return jsonify({"error": "No history found"}), 404
-    return jsonify(history)
 
 
 # ── API: Custom data ──────────────────────────────────────────
