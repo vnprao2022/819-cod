@@ -360,7 +360,10 @@ async function initDatasetSelector(containerId, serverId, onChange) {
   }
 
   const datasets = await API.get(`/api/servers/${serverId}/datasets`);
-  const current = Store.getDataset() || (datasets.length ? datasets[datasets.length - 1].key : '');
+  const stored = Store.getDataset();
+  const current = datasets.some(dataset => dataset.key === stored)
+    ? stored
+    : (datasets.length ? datasets[datasets.length - 1].key : '');
 
   container.innerHTML = `
     <div class="control-group">
