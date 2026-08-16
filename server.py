@@ -25,7 +25,13 @@ from lib.auth import login, logout, require_admin, is_valid_token, get_token_fro
 from lib.excel_parser import parse_filename, read_excel
 
 app = Flask(__name__, static_folder="public", static_url_path="")
+app.config["MAX_CONTENT_LENGTH"] = 4 * 1024 * 1024
 CORS(app)
+
+
+@app.errorhandler(413)
+def file_too_large(_error):
+    return jsonify({"error": "Excel file is too large. The maximum upload size is 4 MB."}), 413
 
 
 # ── Static pages ──────────────────────────────────────────────
@@ -83,10 +89,15 @@ def api_dataset(server_id, dataset_key):
 
 
 @app.route("/api/servers/<server_id>/dataset/<dataset_key>", methods=["DELETE"])
+@require_admin
 def api_delete_dataset(server_id, dataset_key):
     if not re.fullmatch(r"\d+", server_id) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}", dataset_key):
         return jsonify({"error": "Invalid dataset key"}), 400
-    if not delete_dataset(server_id, dataset_key):
+    try:
+        deleted = delete_dataset(server_id, dataset_key)
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 503
+    if not deleted:
         return jsonify({"error": "Dataset not found"}), 404
     return jsonify({"success": True, "custom_preserved": True})
 
@@ -124,6 +135,7 @@ def api_custom(server_id):
 
 
 @app.route("/api/servers/<server_id>/custom/<role_id>", methods=["PUT"])
+@require_admin
 def api_update_custom(server_id, role_id):
     data = request.get_json()
     if not data:
@@ -144,10 +156,11 @@ def api_update_custom(server_id, role_id):
 @app.route("/api/admin/login", methods=["POST"])
 def api_admin_login():
     data = request.get_json() or {}
+    username = data.get("username", "")
     password = data.get("password", "")
-    token = login(password)
+    token = login(username, password)
     if not token:
-        return jsonify({"error": "Invalid password"}), 401
+        return jsonify({"error": "Invalid username or password"}), 401
     return jsonify({"token": token})
 
 
@@ -168,6 +181,7 @@ def api_admin_check():
 # ── API: Import ───────────────────────────────────────────────
 
 @app.route("/api/import/preview", methods=["POST"])
+@require_admin
 def api_import_preview():
     if "file" not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
@@ -212,6 +226,7 @@ def api_import_preview():
 
 
 @app.route("/api/import/confirm", methods=["POST"])
+@require_admin
 def api_import_confirm():
     if "file" not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
@@ -242,6 +257,8 @@ def api_import_confirm():
         path = save_dataset(parsed)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+    except RuntimeError as e:
+        return jsonify({"error": str(e)}), 503
     finally:
         os.unlink(tmp_path)
 

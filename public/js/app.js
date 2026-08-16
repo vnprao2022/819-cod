@@ -1,6 +1,5 @@
-/** Shared API client. Vercel serves read-only data through the Flask API. */
+/** Shared API client for local and Vercel Flask deployments. */
 
-const VERCEL_MODE = location.hostname.endsWith('vercel.app');
 const STATIC_MODE = false;
 
 const StaticData = {
@@ -114,8 +113,7 @@ const API = {
   },
 
   async delete(path) {
-    if (VERCEL_MODE) throw new Error('Deleting datasets is available only on localhost.');
-    const res = await fetch(`${this.base}${path}`, { method: 'DELETE' });
+    const res = await fetch(`${this.base}${path}`, { method: 'DELETE', headers: this.authHeaders() });
     const data = await res.json().catch(() => ({ error: res.statusText }));
     if (!res.ok) throw new Error(data.error || res.statusText);
     return data;
@@ -133,19 +131,20 @@ const API = {
   },
 
   async upload(path, formData) {
-    if (VERCEL_MODE) throw new Error('Importing Excel is available only on localhost.');
     const res = await fetch(`${this.base}${path}`, {
       method: 'POST',
       headers: this.authHeaders(),
       body: formData,
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({
+      error: res.status === 413 ? 'Excel file is too large. Vercel accepts files up to 4 MB for this importer.' : res.statusText,
+    }));
     if (!res.ok) throw new Error(data.error || res.statusText);
     return data;
   },
 
-  async login(password) {
-    const data = await this.post('/api/admin/login', { password });
+  async login(username, password) {
+    const data = await this.post('/api/admin/login', { username, password });
     this.setAdminToken(data.token);
     return data;
   },
@@ -161,7 +160,6 @@ const API = {
   },
 
   async checkAdmin() {
-    if (VERCEL_MODE) return false;
     const token = this.getAdminToken();
     if (!token) return false;
     try {
@@ -312,8 +310,12 @@ window.showAdminLogin = () => {
     <div class="modal-box">
       <h3>${t('import_login')}</h3>
       <div class="form-row" style="margin-top:1rem">
+        <label>${t('username')}</label>
+        <input type="text" id="admin-user-input" value="admin" autocomplete="username" autofocus>
+      </div>
+      <div class="form-row" style="margin-top:1rem">
         <label>${t('admin_password')}</label>
-        <input type="password" id="admin-pw-input" autofocus>
+        <input type="password" id="admin-pw-input" autocomplete="current-password">
       </div>
       <div id="admin-login-error" class="alert alert-danger" style="display:none;margin-top:0.5rem"></div>
       <div style="margin-top:1rem;display:flex;gap:0.5rem">
@@ -325,10 +327,11 @@ window.showAdminLogin = () => {
   document.body.appendChild(modal);
 
   const doLogin = async () => {
+    const username = document.getElementById('admin-user-input').value;
     const pw = document.getElementById('admin-pw-input').value;
     const errEl = document.getElementById('admin-login-error');
     try {
-      await API.login(pw);
+      await API.login(username, pw);
       modal.remove();
       location.reload();
     } catch (err) {

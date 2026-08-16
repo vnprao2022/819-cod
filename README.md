@@ -62,10 +62,12 @@ python scripts/import_excel.py "819_2026-08-01_2026-08-10.xlsx"
 
 ## Vercel
 
-- Import and delete Excel datasets on localhost only.
-- Custom player fields (deco, artifact, main troop, tier, notes and farm links)
-  can be edited on `tuan.html` after deployment. They are saved in the connected
-  private Vercel Blob store when `BLOB_READ_WRITE_TOKEN` is available.
+- Sign in to `tuan.html` with the configured admin account to import, replace,
+  or delete Excel datasets on Vercel. Excel uploads are limited to 4 MB.
+- Imported dataset JSON and custom player fields are saved in the connected
+  private Vercel Blob store. Local development continues to use `data/` files.
+- Set `ADMIN_USERNAME`, `ADMIN_PASSWORD`, and `ADMIN_SESSION_SECRET` in Vercel
+  Environment Variables to override the local defaults.
 
 ## API Endpoints
 

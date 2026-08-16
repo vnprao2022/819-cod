@@ -4,6 +4,13 @@ import json
 from pathlib import Path
 
 from lib.blob_custom import enabled as blob_enabled, is_vercel, read_custom, write_custom
+from lib.blob_datasets import (
+    delete_dataset as delete_blob_dataset,
+    read_dataset as read_blob_dataset,
+    read_index as read_blob_dataset_index,
+    write_dataset as write_blob_dataset,
+    write_index as write_blob_dataset_index,
+)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Imported datasets and custom player information stay outside the web assets.
@@ -51,7 +58,7 @@ def list_servers() -> list[str]:
     return sorted(servers, key=lambda x: int(x) if x.isdigit() else x)
 
 
-def list_datasets(server_id: str) -> list[dict]:
+def _list_local_datasets(server_id: str) -> list[dict]:
     server_dir = DATASETS_DIR / server_id
     if not server_dir.exists():
         return []
@@ -70,17 +77,45 @@ def list_datasets(server_id: str) -> list[dict]:
     return datasets
 
 
+def list_datasets(server_id: str) -> list[dict]:
+    if is_vercel():
+        remote_index = read_blob_dataset_index(server_id)
+        if remote_index is not None:
+            return sorted(remote_index.get("datasets", []), key=lambda item: item["key"])
+    return _list_local_datasets(server_id)
+
+
 def get_dataset(server_id: str, dataset_key: str) -> dict | None:
+    if is_vercel():
+        remote = read_blob_dataset(server_id, dataset_key)
+        if remote is not None:
+            return remote
+        remote_index = read_blob_dataset_index(server_id)
+        if dataset_key in (remote_index or {}).get("deleted", []):
+            return None
     path = DATASETS_DIR / server_id / f"{dataset_key}.json"
     return _read_json(path) if path.exists() else None
 
 
 def dataset_exists(server_id: str, dataset_key: str) -> bool:
-    return (DATASETS_DIR / server_id / f"{dataset_key}.json").exists()
+    return get_dataset(server_id, dataset_key) is not None
 
 
 def delete_dataset(server_id: str, dataset_key: str) -> bool:
     """Delete only an imported Excel dataset; custom JSON remains untouched."""
+    if is_vercel():
+        datasets = list_datasets(server_id)
+        if not any(item["key"] == dataset_key for item in datasets):
+            return False
+        current_index = read_blob_dataset_index(server_id) or {}
+        deleted = set(current_index.get("deleted", []))
+        deleted.add(dataset_key)
+        delete_blob_dataset(server_id, dataset_key)
+        write_blob_dataset_index(server_id, {
+            "datasets": [item for item in datasets if item["key"] != dataset_key],
+            "deleted": sorted(deleted),
+        })
+        return True
     path = DATASETS_DIR / server_id / f"{dataset_key}.json"
     if not path.exists():
         return False
@@ -103,6 +138,26 @@ def save_dataset(dataset: dict) -> str:
         "imported_at": dataset.get("imported_at"),
         "players": dataset["players"],
     }
+    if is_vercel():
+        datasets = list_datasets(server_id)
+        metadata = {
+            "key": key,
+            "date_from": save_data["date_from"],
+            "date_to": save_data["date_to"],
+            "source_file": save_data["source_file"],
+            "player_count": len(save_data["players"]),
+        }
+        datasets = [item for item in datasets if item["key"] != key]
+        datasets.append(metadata)
+        current_index = read_blob_dataset_index(server_id) or {}
+        deleted = set(current_index.get("deleted", []))
+        deleted.discard(key)
+        pathname = write_blob_dataset(server_id, key, save_data)
+        write_blob_dataset_index(server_id, {
+            "datasets": sorted(datasets, key=lambda item: item["key"]),
+            "deleted": sorted(deleted),
+        })
+        return pathname
     _write_json(path, save_data)
     _write_indexes()
     return str(path)

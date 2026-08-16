@@ -185,6 +185,10 @@ async function previewExcelImport(file) {
     panel.innerHTML = '<div class="alert alert-danger">Please select an .xlsx file.</div>';
     return;
   }
+  if (file.size > 4 * 1024 * 1024) {
+    panel.innerHTML = '<div class="alert alert-danger">Excel file is too large. The maximum upload size on Vercel is 4 MB.</div>';
+    return;
+  }
   showLoading(panel);
   const form = new FormData();
   form.append('file', file);
@@ -240,21 +244,50 @@ function resetExcelImport() {
   document.getElementById('admin-import-panel').innerHTML = '';
 }
 
-document.getElementById('admin-player-search').addEventListener('input', filterAdminRanking);
-document.querySelectorAll('.admin-tab').forEach(button => button.addEventListener('click', () => switchAdminTab(button.dataset.adminTab)));
-document.getElementById('new-import-btn').addEventListener('click', () => {
-  if (VERCEL_MODE) {
-    document.getElementById('admin-import-panel').innerHTML = '<div class="alert alert-info">This Vercel site is read-only. Import Excel on localhost, then push data to GitHub.</div>';
-    return;
-  }
+function bindAdminEvents() {
+  document.getElementById('admin-player-search').addEventListener('input', filterAdminRanking);
+  document.querySelectorAll('.admin-tab').forEach(button => button.addEventListener('click', () => switchAdminTab(button.dataset.adminTab)));
+  document.getElementById('new-import-btn').addEventListener('click', () => {
+    resetExcelImport();
+    document.getElementById('admin-excel-file').click();
+  });
+  document.getElementById('admin-excel-file').addEventListener('change', e => { if (e.target.files.length) previewExcelImport(e.target.files[0]); });
+}
+
+async function initializeAdminPage() {
+  bindAdminEvents();
   resetExcelImport();
-  document.getElementById('admin-excel-file').click();
-});
-document.getElementById('admin-excel-file').addEventListener('change', e => { if (e.target.files.length) previewExcelImport(e.target.files[0]); });
-(async () => {
-  if (VERCEL_MODE) {
-    document.getElementById('static-admin-notice').innerHTML = '<div class="alert alert-info">Custom stats and farm links can be edited here. Importing or deleting Excel datasets is available only on localhost.</div>';
-  }
   adminDataset = await initDatasetSelector('dataset-selector', '819', key => { adminDataset = key; loadAdminPlayers(); });
   loadAdminPlayers();
+}
+
+async function showAdminApp() {
+  document.getElementById('tuan-login').hidden = true;
+  document.getElementById('tuan-admin-app').hidden = false;
+  await initializeAdminPage();
+}
+
+document.getElementById('tuan-login-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const error = document.getElementById('tuan-login-error');
+  error.hidden = true;
+  try {
+    await API.login(
+      document.getElementById('tuan-username').value.trim(),
+      document.getElementById('tuan-password').value,
+    );
+    await showAdminApp();
+  } catch (err) {
+    error.textContent = err.message;
+    error.hidden = false;
+  }
+});
+
+document.getElementById('tuan-logout').addEventListener('click', async () => {
+  await API.logout();
+  location.reload();
+});
+
+(async () => {
+  if (await API.checkAdmin()) await showAdminApp();
 })();

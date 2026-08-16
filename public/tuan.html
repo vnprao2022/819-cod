@@ -10,29 +10,45 @@
 </head>
 <body>
   <main class="standalone-admin">
-    <div class="page-header"><h2>Account Management</h2><p class="subtitle">Server 819 · Custom stats and farm linking by Player ID</p></div>
-    <div class="admin-tabs">
-      <button class="admin-tab active" data-admin-tab="players">Accounts</button>
-      <button class="admin-tab" data-admin-tab="datasets">Import Excel & Datasets</button>
+    <section id="tuan-login" class="admin-login-shell">
+      <form id="tuan-login-form" class="admin-login-card">
+        <div class="admin-login-icon">🔐</div>
+        <h2>Admin Login</h2>
+        <p>Sign in to manage Server 819 accounts and Excel datasets.</p>
+        <label for="tuan-username">Username</label>
+        <input type="text" id="tuan-username" value="admin" autocomplete="username" required>
+        <label for="tuan-password">Password</label>
+        <input type="password" id="tuan-password" autocomplete="current-password" required>
+        <div id="tuan-login-error" class="alert alert-danger" hidden></div>
+        <button type="submit" class="btn btn-primary">Login</button>
+      </form>
+    </section>
+
+    <div id="tuan-admin-app" hidden>
+      <div class="page-header admin-page-title"><div><h2>Account Management</h2><p class="subtitle">Server 819 · Custom stats, farm links and Excel datasets</p></div><button class="btn btn-secondary" id="tuan-logout">Logout</button></div>
+      <div class="admin-tabs">
+        <button class="admin-tab active" data-admin-tab="players">Accounts</button>
+        <button class="admin-tab" data-admin-tab="datasets">Import Excel & Datasets</button>
+      </div>
+      <div id="static-admin-notice"></div>
+      <section id="admin-tab-players">
+        <div class="controls-bar">
+          <div id="dataset-selector"></div>
+          <div class="control-group admin-search"><label>Player</label><input type="search" id="admin-player-search" placeholder="Search name or Player ID..."></div>
+        </div>
+        <div id="admin-ranking"></div>
+        <div id="admin-editor"></div>
+      </section>
+      <section id="admin-tab-datasets" hidden>
+        <div class="dataset-admin-header">
+          <div><h3>Imported Datasets</h3><p>Import, replace or delete Excel data on localhost or Vercel. Custom player data is stored separately and will be preserved.</p></div>
+          <button class="btn btn-primary" id="new-import-btn">＋ Import Excel</button>
+        </div>
+        <input type="file" id="admin-excel-file" accept=".xlsx" hidden>
+        <div id="admin-import-panel"></div>
+        <div id="admin-datasets-list"></div>
+      </section>
     </div>
-    <div id="static-admin-notice"></div>
-    <section id="admin-tab-players">
-      <div class="controls-bar">
-        <div id="dataset-selector"></div>
-        <div class="control-group admin-search"><label>Player</label><input type="search" id="admin-player-search" placeholder="Search name or Player ID..."></div>
-      </div>
-      <div id="admin-ranking"></div>
-      <div id="admin-editor"></div>
-    </section>
-    <section id="admin-tab-datasets" hidden>
-      <div class="dataset-admin-header">
-        <div><h3>Imported Datasets</h3><p>Import, replace or delete Excel data. Custom player data is stored separately and will be preserved.</p></div>
-        <button class="btn btn-primary" id="new-import-btn">＋ Import Excel</button>
-      </div>
-      <input type="file" id="admin-excel-file" accept=".xlsx" hidden>
-      <div id="admin-import-panel"></div>
-      <div id="admin-datasets-list"></div>
-    </section>
   </main>
   <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
