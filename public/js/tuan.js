@@ -264,6 +264,7 @@ async function initializeAdminPage() {
 async function showAdminApp() {
   document.getElementById('tuan-login').hidden = true;
   document.getElementById('tuan-admin-app').hidden = false;
+  window.scrollTo(0, 0);
   await initializeAdminPage();
 }
 
