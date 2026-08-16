@@ -2,6 +2,12 @@ document.getElementById('sidebar').innerHTML = renderSidebar('settings');
 
 let currentServer = Store.getServer();
 
+document.getElementById('settings-logout').textContent = t('logout');
+document.getElementById('settings-logout').addEventListener('click', async () => {
+  await API.logout();
+  location.href = '/';
+});
+
 async function loadSettings() {
   const info = document.getElementById('server-info');
   if (!currentServer) {

@@ -765,7 +765,7 @@ td { padding-top: 0.8rem; padding-bottom: 0.8rem; }
   .form-row { align-items: stretch; flex-direction: column; gap: 0.35rem; }
   .form-row label { width: auto; }
   .form-row input, .form-row select { max-width: none; }
-  .admin-editor-head, .farm-link-title { flex-direction: column; align-items: stretch; }
+  .admin-editor-head, .farm-link-title, .admin-page-title { flex-direction: column; align-items: stretch; }
   .farm-chip { width: 100%; }
   .admin-save-row { flex-direction: column; align-items: stretch; }
   .admin-tabs { overflow-x: auto; }
