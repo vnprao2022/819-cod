@@ -735,6 +735,11 @@ td { padding-top: 0.8rem; padding-bottom: 0.8rem; }
 .farm-search-result:hover { background: #eaf2ff; }
 .farm-search-result b { color: var(--accent); font-size: 1.3rem; }
 .admin-save-row { display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; }
+.admin-save-feedback { min-height: 2.25rem; display: inline-flex; align-items: center; padding: 0.45rem 0.75rem; border-radius: var(--radius); font-size: 0.88rem; font-weight: 700; }
+.admin-save-feedback:empty { display: none; }
+.admin-save-feedback.saving { color: #1d4ed8; background: #dbeafe; }
+.admin-save-feedback.success { color: #166534; background: #dcfce7; border: 1px solid #86efac; }
+.admin-save-feedback.error { color: #b91c1c; background: #fee2e2; border: 1px solid #fca5a5; }
 .admin-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
 .admin-tab { padding: 0.85rem 1.2rem; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--text-secondary); font-size: 1rem; font-weight: 700; cursor: pointer; }
 .admin-tab:hover, .admin-tab.active { color: var(--accent); border-bottom-color: var(--accent); }

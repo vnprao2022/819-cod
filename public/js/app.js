@@ -80,10 +80,6 @@ const API = {
     else sessionStorage.removeItem('cod_admin_token');
   },
 
-  isAdmin() {
-    return !!this.getAdminToken();
-  },
-
   authHeaders(extra = {}) {
     const token = this.getAdminToken();
     return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
@@ -252,10 +248,6 @@ function renderSidebar(activePage) {
     { href: '/settings.html', icon: '⚙️', label: t('nav_settings'), id: 'settings' },
   ];
 
-  if (API.isAdmin()) {
-    pages.splice(3, 0, { href: '/import.html', icon: '📥', label: t('nav_import'), id: 'import' });
-  }
-
   return `
     <button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
     <aside class="sidebar">
@@ -277,78 +269,8 @@ function renderSidebar(activePage) {
   `;
 }
 
-async function renderAdminSection() {
-  const el = document.getElementById('admin-section');
-  if (!el) return;
-
-  const isAdmin = await API.checkAdmin();
-  if (isAdmin) {
-    el.innerHTML = `
-      <div class="admin-badge">${t('admin_logged_in')}</div>
-      <button class="btn btn-secondary btn-sm btn-block" onclick="handleLogout()">${t('logout')}</button>
-    `;
-  } else {
-    el.innerHTML = `
-      <button class="btn btn-secondary btn-sm btn-block" onclick="showAdminLogin()">${t('import_login')}</button>
-    `;
-  }
-}
-
-window.handleLogout = async () => {
-  await API.logout();
-  location.reload();
-};
-
-window.showAdminLogin = () => {
-  const existing = document.getElementById('admin-login-modal');
-  if (existing) existing.remove();
-
-  const modal = document.createElement('div');
-  modal.id = 'admin-login-modal';
-  modal.className = 'modal-overlay';
-  modal.innerHTML = `
-    <div class="modal-box">
-      <h3>${t('import_login')}</h3>
-      <div class="form-row" style="margin-top:1rem">
-        <label>${t('username')}</label>
-        <input type="text" id="admin-user-input" value="admin" autocomplete="username" autofocus>
-      </div>
-      <div class="form-row" style="margin-top:1rem">
-        <label>${t('admin_password')}</label>
-        <input type="password" id="admin-pw-input" autocomplete="current-password">
-      </div>
-      <div id="admin-login-error" class="alert alert-danger" style="display:none;margin-top:0.5rem"></div>
-      <div style="margin-top:1rem;display:flex;gap:0.5rem">
-        <button class="btn btn-primary" id="admin-login-btn">${t('login')}</button>
-        <button class="btn btn-secondary" onclick="document.getElementById('admin-login-modal').remove()">${t('cancel')}</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-
-  const doLogin = async () => {
-    const username = document.getElementById('admin-user-input').value;
-    const pw = document.getElementById('admin-pw-input').value;
-    const errEl = document.getElementById('admin-login-error');
-    try {
-      await API.login(username, pw);
-      modal.remove();
-      location.reload();
-    } catch (err) {
-      errEl.textContent = err.message;
-      errEl.style.display = 'block';
-    }
-  };
-
-  document.getElementById('admin-login-btn').addEventListener('click', doLogin);
-  document.getElementById('admin-pw-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') doLogin();
-  });
-};
-
 async function initSidebar(activePage) {
   document.getElementById('sidebar').innerHTML = renderSidebar(activePage);
-  await renderAdminSection();
 }
 
 async function initServerSelector(containerId, onChange) {
@@ -410,41 +332,14 @@ async function saveCustomData(serverId, roleId, fields) {
   return API.put(`/api/servers/${serverId}/custom/${roleId}`, fields);
 }
 
-function renderCustomCell(col, player, editable) {
+function renderCustomCell(col, player) {
   const val = player[col];
-  if (!editable) {
-    if (col === 'tier') return renderTier(val);
-    if (col === 'red_artifact') {
-      const yes = val === true || val === 'true' || val === 1;
-      return `<span class="badge ${yes ? 'badge-yes' : 'badge-no'}">${yes ? t('yes') : t('no')}</span>`;
-    }
-    if (col === 'main') return getMainLabel(val);
-    return val || '-';
-  }
-
-  if (col === 'deco') {
-    return `<input class="inline-edit" data-field="deco" data-id="${player.role_id}" value="${val || ''}" placeholder="${t('deco_placeholder')}">`;
-  }
+  if (col === 'tier') return renderTier(val);
   if (col === 'red_artifact') {
-    const checked = val === true || val === 'true' || val === 1 ? 'checked' : '';
-    return `<input type="checkbox" class="inline-check" data-field="red_artifact" data-id="${player.role_id}" ${checked}>`;
+    const yes = val === true || val === 'true' || val === 1;
+    return `<span class="badge ${yes ? 'badge-yes' : 'badge-no'}">${yes ? t('yes') : t('no')}</span>`;
   }
-  if (col === 'main') {
-    return `<select class="inline-edit" data-field="main" data-id="${player.role_id}">
-      <option value="">-</option>
-      ${getMainOptions().map(o => `<option value="${o.value}" ${val === o.value ? 'selected' : ''}>${o.label}</option>`).join('')}
-    </select>`;
-  }
-  if (col === 'tier') {
-    return `<select class="inline-edit" data-field="tier" data-id="${player.role_id}">
-      <option value="" ${!val ? 'selected' : ''}>-</option>
-      <option value="T4" ${val === 'T4' ? 'selected' : ''}>T4</option>
-      <option value="T5" ${val === 'T5' ? 'selected' : ''}>T5</option>
-    </select>`;
-  }
-  if (col === 'note') {
-    return `<input class="inline-edit" data-field="note" data-id="${player.role_id}" value="${val || ''}">`;
-  }
+  if (col === 'main') return getMainLabel(val);
   return val || '-';
 }
 
@@ -452,20 +347,4 @@ function renderTier(value) {
   if (value === 'T4') return '<span class="badge tier-t4">T4</span>';
   if (value === 'T5') return '<span class="badge tier-t5">T5</span>';
   return '<span class="tier-none">-</span>';
-}
-
-function bindInlineEdits(serverId, onSaved) {
-  document.querySelectorAll('.inline-edit, .inline-check').forEach(el => {
-    el.addEventListener('change', async () => {
-      const roleId = el.dataset.id;
-      const field = el.dataset.field;
-      let value = el.type === 'checkbox' ? el.checked : el.value;
-      try {
-        await saveCustomData(serverId, roleId, { [field]: value });
-        if (onSaved) onSaved(roleId, field, value);
-      } catch (err) {
-        alert(err.message);
-      }
-    });
-  });
 }

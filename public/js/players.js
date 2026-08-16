@@ -7,7 +7,6 @@ let sortDir = 'desc';
 let currentPage = 1;
 const PAGE_SIZE = 50;
 let visibleColumns = Store.getColumns() || [...DEFAULT_COLUMNS];
-let isAdmin = false;
 
 function renderColumnPicker() {
   const allCols = [...new Set([...DEFAULT_COLUMNS, ...allPlayers.length ? Object.keys(allPlayers[0]) : []])];
@@ -75,7 +74,7 @@ function applyCurrentSort() {
 
 function renderCell(col, p) {
   if (col === 'mp_ratio') return formatMP(p.merit, p.power);
-  if (CUSTOM_FIELDS.includes(col)) return renderCustomCell(col, p, isAdmin);
+  if (CUSTOM_FIELDS.includes(col)) return renderCustomCell(col, p);
   if (col === 'red_artifact') {
     const yes = p[col] === true || p[col] === 'true' || p[col] === 1;
     return `<span class="badge ${yes ? 'badge-yes' : 'badge-no'}">${yes ? t('yes') : t('no')}</span>`;
@@ -95,7 +94,6 @@ function renderTable() {
   const cols = visibleColumns;
 
   container.innerHTML = `
-    ${isAdmin ? `<div class="alert alert-info" style="margin-bottom:1rem">${t('admin_logged_in')} — ${t('edit')} Deco / Artifact / Main trực tiếp trong bảng.</div>` : ''}
     <div class="table-wrapper">
       <table>
         <thead><tr>
@@ -119,8 +117,7 @@ function renderTable() {
                   return `<td class="name" onclick="location.href='/player.html?id=${p.role_id}'" style="cursor:pointer">${p.name || '-'} ${badge}</td>`;
                 }
                 const cls = NUMERIC_FIELDS.has(col) || col === 'mp_ratio' ? 'number' : '';
-                const editable = isAdmin && CUSTOM_FIELDS.includes(col);
-                return `<td class="${cls}${editable ? ' editable-cell' : ''}">${renderCell(col, p)}</td>`;
+                return `<td class="${cls}">${renderCell(col, p)}</td>`;
               }).join('')}
             </tr>
           `).join('')}
@@ -152,10 +149,6 @@ function renderTable() {
     });
   });
 
-  if (isAdmin) bindInlineEdits(currentServer, (roleId, field, value) => {
-    const p = allPlayers.find(x => String(x.role_id) === String(roleId));
-    if (p) p[field] = value;
-  });
 }
 
 window.goPage = (p) => { currentPage = p; renderTable(); };
@@ -227,7 +220,6 @@ document.addEventListener('click', (e) => {
 });
 
 (async () => {
-  isAdmin = await API.checkAdmin();
   await initSidebar('players');
   document.querySelector('.page-header h2').textContent = t('player_rankings');
   document.querySelector('label[for="search-input"], .control-group label').textContent;

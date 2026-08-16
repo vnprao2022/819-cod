@@ -99,7 +99,7 @@ function openAdminEditor(roleId) {
         <div id="linked-farms" class="farm-chip-list"></div>
         <div id="farm-search-panel" class="farm-search-panel" hidden><input type="search" id="farm-search-input" placeholder="Search farm by name or Player ID..."><div id="farm-search-results"></div></div>
       </div>
-      <div class="admin-save-row"><button class="btn btn-primary" id="adm-save">Save changes</button><span id="adm-save-status"></span></div>
+      <div class="admin-save-row"><button class="btn btn-primary" id="adm-save">Lưu thay đổi</button><span id="adm-save-status" class="admin-save-feedback" role="status" aria-live="polite"></span></div>
     </div>`;
   renderFarmLinks();
   target.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -121,12 +121,24 @@ async function saveAdminChanges() {
     farm_role_ids: [...new Set(linkedFarmIds)],
   };
   const status = document.getElementById('adm-save-status');
+  const saveButton = document.getElementById('adm-save');
+  saveButton.disabled = true;
+  saveButton.textContent = 'Đang lưu...';
+  status.className = 'admin-save-feedback saving';
+  status.textContent = 'Đang gửi dữ liệu lên server...';
   try {
     await saveCustomData('819', editingPlayer.role_id, fields);
     Object.assign(editingPlayer, fields);
-    status.innerHTML = '<span style="color:var(--success)">Saved successfully!</span>';
+    status.className = 'admin-save-feedback success';
+    status.textContent = `✓ Đã lưu thành công lúc ${new Date().toLocaleTimeString('vi-VN')}`;
     renderAdminRanking();
-  } catch (err) { status.textContent = err.message; }
+  } catch (err) {
+    status.className = 'admin-save-feedback error';
+    status.textContent = `✕ Lưu thất bại: ${err.message}`;
+  } finally {
+    saveButton.disabled = false;
+    saveButton.textContent = 'Lưu thay đổi';
+  }
 }
 
 async function loadAdminPlayers() {

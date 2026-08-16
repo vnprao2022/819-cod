@@ -1,5 +1,4 @@
 let currentServer = Store.getServer();
-let isAdmin = false;
 
 const DETAIL_FIELDS = [
   'rank', 'power', 'highest_power', 'deaths', 'merit', 'mp_ratio', 'gathering',
@@ -7,41 +6,6 @@ const DETAIL_FIELDS = [
   'resource_aid', 'behemoth_wins', 'alliance_help',
   'merit_infantry', 'merit_cavalry', 'merit_archer', 'merit_mage', 'merit_other',
 ];
-
-function renderCustomEditor(roleId, custom) {
-  if (!isAdmin) return '';
-
-  return `
-    <div class="custom-editor">
-      <h4>${t('custom_data')}</h4>
-      <div class="form-row">
-        <label>${t('deco')}</label>
-        <input type="text" id="custom-deco" value="${custom.deco || ''}" placeholder="${t('deco_placeholder')}">
-      </div>
-      <div class="form-row">
-        <label>${t('red_artifact')}</label>
-        <input type="checkbox" id="custom-red-artifact" ${custom.red_artifact ? 'checked' : ''}>
-      </div>
-      <div class="form-row">
-        <label>${t('main')}</label>
-        <select id="custom-main">
-          <option value="">-</option>
-          ${getMainOptions().map(o => `<option value="${o.value}" ${custom.main === o.value ? 'selected' : ''}>${o.label}</option>`).join('')}
-        </select>
-      </div>
-      <div class="form-row">
-        <label>${t('note')}</label>
-        <input type="text" id="custom-note" value="${custom.note || ''}">
-      </div>
-      <div class="form-row">
-        <label>${t('farm_ids')}</label>
-        <input type="text" id="custom-farm-ids" value="${(custom.farm_role_ids || []).join(', ')}" placeholder="${t('farm_ids_hint')}">
-      </div>
-      <button class="btn btn-primary" id="save-custom-btn" style="margin-top:0.5rem">${t('save')}</button>
-      <span id="save-status" style="margin-left:1rem;font-size:0.85rem"></span>
-    </div>
-  `;
-}
 
 function renderDetailValue(field, player) {
   if (field === 'mp_ratio') return formatMP(player.merit, player.power);
@@ -99,8 +63,6 @@ async function loadPlayer(roleId) {
         `).join('')}
       </div>
 
-      ${renderCustomEditor(roleId, custom)}
-
       <h3 style="font-family:var(--font-display);margin:2rem 0 1rem">${t('farm_accounts')}</h3>
       ${farms.length ? `
         <div class="table-wrapper"><table>
@@ -111,25 +73,6 @@ async function loadPlayer(roleId) {
 
     `;
 
-    const saveBtn = document.getElementById('save-custom-btn');
-    if (saveBtn) {
-      saveBtn.addEventListener('click', async () => {
-        const status = document.getElementById('save-status');
-        try {
-          await saveCustomData(currentServer, roleId, {
-            deco: document.getElementById('custom-deco').value,
-            red_artifact: document.getElementById('custom-red-artifact').checked,
-            main: document.getElementById('custom-main').value,
-            note: document.getElementById('custom-note').value,
-            farm_role_ids: document.getElementById('custom-farm-ids').value.split(',').map(v => v.trim()).filter(Boolean),
-          });
-          status.innerHTML = `<span style="color:var(--success)">${t('saved')}</span>`;
-          setTimeout(() => loadPlayer(roleId), 500);
-        } catch (err) {
-          status.innerHTML = `<span style="color:var(--danger)">${err.message}</span>`;
-        }
-      });
-    }
   } catch (err) {
     showError(container, err.message);
   }
@@ -172,7 +115,6 @@ document.getElementById('player-id-input').addEventListener('keydown', (e) => {
 });
 
 (async () => {
-  isAdmin = false;
   await initSidebar('player');
   document.querySelector('.page-header h2').textContent = t('player_detail');
   document.querySelector('.page-header .subtitle').textContent = t('player_subtitle');
