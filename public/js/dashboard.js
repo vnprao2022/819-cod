@@ -24,22 +24,35 @@ async function loadDashboard() {
     `;
 
     content.innerHTML = `
-      <div class="stats-grid">
-        <div class="stat-card"><div class="label">${t('total_players')}</div><div class="value gold">${s.total_players.toLocaleString()}</div></div>
-        <div class="stat-card"><div class="label">${t('total_power')}</div><div class="value">${formatNumber(s.total_power)}</div></div>
-        <div class="stat-card"><div class="label">${t('top_300_power')}</div><div class="value">${formatNumber(s.top_300_power)}</div></div>
-        <div class="stat-card"><div class="label">${t('top_200_power')}</div><div class="value gold">${formatNumber(s.top_200_power)}</div></div>
-        <div class="stat-card"><div class="label">${t('average_power')}</div><div class="value">${formatNumber(s.average_power)}</div></div>
-        <div class="stat-card"><div class="label">${t('highest_power')}</div><div class="value gold">${formatNumber(s.highest_power)}</div></div>
-        <div class="stat-card"><div class="label">${t('total_deaths')}</div><div class="value">${formatNumber(s.total_deaths)}</div></div>
-        <div class="stat-card"><div class="label">${t('total_merit')}</div><div class="value">${formatNumber(s.total_merit)}</div></div>
-        <div class="stat-card"><div class="label">${t('total_healing')}</div><div class="value">${formatNumber(s.total_healing)}</div></div>
-        <div class="stat-card"><div class="label">${t('total_gathering')}</div><div class="value">${formatNumber(s.total_gathering)}</div></div>
+      <div class="tier-summary">
+        <div class="tier-summary-header">
+          <div>
+            <h3>${t('tier_statistics')}</h3>
+            <p>${t('tier_statistics_note')}</p>
+          </div>
+          <div class="eligible-total">${t('eligible_accounts')}: <strong>${(s.tier_counts?.eligible || 0).toLocaleString()}</strong></div>
+        </div>
+        <div class="tier-cards">
+          <div class="stat-card stat-card-tier stat-card-t4"><div class="label">${t('t4_accounts')}</div><div class="value">${(s.tier_counts?.t4 || 0).toLocaleString()}</div></div>
+          <div class="stat-card stat-card-tier stat-card-t5"><div class="label">${t('t5_accounts')}</div><div class="value">${(s.tier_counts?.t5 || 0).toLocaleString()}</div></div>
+        </div>
+      </div>
+      <div class="stats-grid dashboard-stats-grid">
+        <div class="stat-card stat-card-blue"><div class="label">${t('total_players')}</div><div class="value">${s.total_players.toLocaleString()}</div></div>
+        <div class="stat-card stat-card-indigo"><div class="label">${t('total_power')}</div><div class="value">${formatNumber(s.total_power)}</div></div>
+        <div class="stat-card stat-card-cyan"><div class="label">${t('top_300_power')}</div><div class="value">${formatNumber(s.top_300_power)}</div></div>
+        <div class="stat-card stat-card-violet"><div class="label">${t('top_200_power')}</div><div class="value">${formatNumber(s.top_200_power)}</div></div>
+        <div class="stat-card stat-card-teal"><div class="label">${t('average_power')}</div><div class="value">${formatNumber(s.average_power)}</div></div>
+        <div class="stat-card stat-card-amber"><div class="label">${t('highest_power')}</div><div class="value">${formatNumber(s.highest_power)}</div></div>
+        <div class="stat-card stat-card-red"><div class="label">${t('total_deaths')}</div><div class="value">${formatNumber(s.total_deaths)}</div></div>
+        <div class="stat-card stat-card-orange"><div class="label">${t('total_merit')}</div><div class="value">${formatNumber(s.total_merit)}</div></div>
+        <div class="stat-card stat-card-green"><div class="label">${t('total_healing')}</div><div class="value">${formatNumber(s.total_healing)}</div></div>
+        <div class="stat-card stat-card-lime"><div class="label">${t('total_gathering')}</div><div class="value">${formatNumber(s.total_gathering)}</div></div>
       </div>
       <h3 style="margin:2rem 0 1rem;font-family:var(--font-display)">${t('power_distribution')}</h3>
       <div class="stats-grid">
         ${['power_0_20', 'power_20_40', 'power_40_60', 'power_60_80', 'power_80_100', 'power_over_100'].map(key => `
-          <div class="stat-card"><div class="label">${t(key)}</div><div class="value">${(s.power_buckets?.[key] || 0).toLocaleString()}</div></div>
+          <div class="stat-card distribution-card"><div class="label">${t(key)}</div><div class="value">${(s.power_buckets?.[key] || 0).toLocaleString()}</div></div>
         `).join('')}
       </div>
       <div style="text-align:center;margin-top:1rem">

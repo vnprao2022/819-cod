@@ -41,8 +41,11 @@ const StaticData = {
     const powers = values('power');
     const sorted = [...powers].sort((a, b) => b - a);
     const bucket = (min, max = Infinity) => powers.filter(p => p >= min && p < max).length;
+    const eligible = players.filter(p => (Number(p.power) || 0) > 20e6);
+    const t5 = eligible.filter(p => String(p.tier || '').trim().toUpperCase() === 'T5').length;
     return {
       total_players: players.length, total_power: powers.reduce((a, b) => a + b, 0),
+      tier_counts: { t4: eligible.length - t5, t5, eligible: eligible.length },
       top_300_power: sorted.slice(0, 300).reduce((a, b) => a + b, 0), top_200_power: sorted.slice(0, 200).reduce((a, b) => a + b, 0),
       average_power: powers.length ? Math.round(powers.reduce((a, b) => a + b, 0) / powers.length) : 0, highest_power: Math.max(0, ...powers),
       total_deaths: values('deaths').reduce((a, b) => a + b, 0), total_merit: values('merit').reduce((a, b) => a + b, 0),
@@ -57,7 +60,7 @@ const StaticData = {
     match = path.match(/^\/api\/servers\/([^/]+)\/dataset\/([^/]+)$/);
     if (match) return this.mergedDataset(match[1], match[2]);
     match = path.match(/^\/api\/servers\/([^/]+)\/dashboard\/([^/]+)$/);
-    if (match) { const data = await this.dataset(match[1], match[2]); return { server_id: match[1], date_from: data.date_from, date_to: data.date_to, stats: this.stats(data.players || []) }; }
+    if (match) { const data = await this.mergedDataset(match[1], match[2]); return { server_id: match[1], date_from: data.date_from, date_to: data.date_to, stats: this.stats((data.players || []).filter(p => !p.migrated)) }; }
     match = path.match(/^\/api\/servers\/([^/]+)\/custom$/);
     if (match) return this.custom(match[1]);
     match = path.match(/^\/api\/servers\/([^/]+)\/player\/([^?]+)(?:\?dataset=([^&]+))?$/);

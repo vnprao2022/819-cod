@@ -173,9 +173,15 @@ def get_dashboard_stats(server_id: str, dataset_key: str) -> dict:
         return {}
     players = dataset.get("players", [])
     if not players:
-        return {"total_players": 0}
+        return {"total_players": 0, "tier_counts": {"t4": 0, "t5": 0, "eligible": 0}}
 
     powers = [p.get("power", 0) or 0 for p in players]
+    custom = get_custom(server_id)
+    eligible_players = [p for p in players if (p.get("power", 0) or 0) > 20_000_000]
+    t5_count = sum(
+        str(custom.get(str(p.get("role_id")), {}).get("tier", "")).strip().upper() == "T5"
+        for p in eligible_players
+    )
     ranked_powers = sorted(powers, reverse=True)
     power_buckets = {
         "power_0_20": sum(0 <= p < 20_000_000 for p in powers),
@@ -187,6 +193,11 @@ def get_dashboard_stats(server_id: str, dataset_key: str) -> dict:
     }
     return {
         "total_players": len(players),
+        "tier_counts": {
+            "t4": len(eligible_players) - t5_count,
+            "t5": t5_count,
+            "eligible": len(eligible_players),
+        },
         "total_power": sum(powers),
         "top_300_power": sum(ranked_powers[:300]),
         "top_200_power": sum(ranked_powers[:200]),
