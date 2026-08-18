@@ -49,7 +49,7 @@ const StaticData = {
       total_players: players.length, total_power: powers.reduce((a, b) => a + b, 0),
       red_artifact_count: players.filter(p => truthy(p.red_artifact)).length,
       tier_counts: { t4: eligible.length - t5, t5, eligible: eligible.length },
-      top_300_power: sorted.slice(0, 300).reduce((a, b) => a + b, 0), top_200_power: sorted.slice(0, 200).reduce((a, b) => a + b, 0),
+      top_300_power: sorted.slice(0, 300).reduce((a, b) => a + b, 0), pairing_power: players.filter(p => (Number(p.power) || 0) > 15e6).reduce((sum, p) => sum + (Number(p.power) || 0), 0),
       average_power: powers.length ? Math.round(powers.reduce((a, b) => a + b, 0) / powers.length) : 0, highest_power: Math.max(0, ...powers),
       total_deaths: values('deaths').reduce((a, b) => a + b, 0), total_merit: values('merit').reduce((a, b) => a + b, 0),
       total_healing: values('healing').reduce((a, b) => a + b, 0), total_gathering: values('gathering').reduce((a, b) => a + b, 0),

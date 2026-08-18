@@ -380,7 +380,11 @@ def get_dashboard_stats(server_id: str, dataset_key: str) -> dict:
         },
         "total_power": sum(powers),
         "top_300_power": sum(ranked_powers[:300]),
-        "top_200_power": sum(ranked_powers[:200]),
+        "pairing_power": sum(
+            p.get("power", 0) or 0
+            for p in players
+            if (p.get("power", 0) or 0) > 15_000_000
+        ),
         "power_buckets": power_buckets,
         "average_power": round(sum(powers) / len(powers)) if powers else 0,
         "highest_power": max(powers) if powers else 0,

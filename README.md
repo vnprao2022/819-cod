@@ -55,7 +55,8 @@ Chọn khoảng ngày tại ô **Dữ liệu**. Kỳ được chọn sẽ đư�
 
 - **T4 / T5:** chỉ tính tài khoản có lực chiến trên 20M. Tài khoản đã được đánh dấu T5 sẽ vào nhóm T5; những tài khoản đủ điều kiện còn lại được tính là T4.
 - **Tổng tài khoản:** số người trong dataset đang chọn, không cộng hồ sơ di cư được lưu riêng.
-- **Tổng lực chiến, Top 300, Top 200, trung bình và cao nhất.**
+- **Tổng lực chiến, Top 300, trung bình và cao nhất.**
+- **Tổng lực chiến ghép cặp:** tổng lực chiến của tất cả tài khoản trên 15M lực chiến trong dataset đang chọn.
 - **Tổng tử vong, công trạng, trị liệu và thu thập.**
 - **Số người có bảo vật đỏ:** đếm người được đánh dấu Artifact = Yes trong trang quản trị.
 - **Phân bố lực chiến:** chia tài khoản theo các mốc 0–20M, 20–40M, 40–60M, 60–80M, 80–100M và trên 100M.

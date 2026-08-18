@@ -105,12 +105,14 @@ class VercelDatasetStoreTests(unittest.TestCase):
                 {"role_id": "1", "power": 25_000_000},
                 {"role_id": "2", "power": 30_000_000},
                 {"role_id": "3", "power": 10_000_000},
+                {"role_id": "4", "power": 16_000_000},
             ]
         }
         custom = {
             "1": {"red_artifact": True},
             "2": {"red_artifact": "yes"},
             "3": {"red_artifact": False},
+            "4": {"red_artifact": False},
             "999": {"red_artifact": True},
         }
         with (
@@ -120,6 +122,7 @@ class VercelDatasetStoreTests(unittest.TestCase):
             stats = data_store.get_dashboard_stats("819", "test")
 
         self.assertEqual(stats["red_artifact_count"], 2)
+        self.assertEqual(stats["pairing_power"], 71_000_000)
 
     def test_save_dataset_writes_json_and_index_to_blob(self):
         dataset = {
