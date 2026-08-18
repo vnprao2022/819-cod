@@ -1,6 +1,7 @@
 """JSON file data store."""
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 from lib.blob_custom import enabled as blob_enabled, is_vercel, read_custom, write_custom
@@ -11,6 +12,7 @@ from lib.blob_datasets import (
     write_dataset as write_blob_dataset,
     write_index as write_blob_dataset_index,
 )
+from lib.blob_migrated import read_migrated, write_migrated
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Imported datasets and custom player information stay outside the web assets.
@@ -18,6 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 DATASETS_DIR = DATA_DIR / "datasets"
 CUSTOM_DIR = DATA_DIR / "custom"
+MIGRATED_DIR = DATA_DIR / "migrated"
 
 
 def _write_indexes():
@@ -30,6 +33,7 @@ def _write_indexes():
 def ensure_dirs():
     DATASETS_DIR.mkdir(parents=True, exist_ok=True)
     CUSTOM_DIR.mkdir(parents=True, exist_ok=True)
+    MIGRATED_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _read_json(path: Path, default=None):
@@ -54,6 +58,9 @@ def list_servers() -> list[str]:
                 servers.add(d.name)
     if CUSTOM_DIR.exists():
         for f in CUSTOM_DIR.glob("*.json"):
+            servers.add(f.stem)
+    if MIGRATED_DIR.exists():
+        for f in MIGRATED_DIR.glob("*.json"):
             servers.add(f.stem)
     return sorted(servers, key=lambda x: int(x) if x.isdigit() else x)
 
@@ -138,8 +145,12 @@ def save_dataset(dataset: dict) -> str:
         "imported_at": dataset.get("imported_at"),
         "players": dataset["players"],
     }
+    datasets_before_save = list_datasets(server_id)
+    migrated_update = _prepare_migrated_update(
+        server_id, key, save_data["players"], datasets_before_save
+    )
     if is_vercel():
-        datasets = list_datasets(server_id)
+        datasets = datasets_before_save
         metadata = {
             "key": key,
             "date_from": save_data["date_from"],
@@ -157,10 +168,100 @@ def save_dataset(dataset: dict) -> str:
             "datasets": sorted(datasets, key=lambda item: item["key"]),
             "deleted": sorted(deleted),
         })
+        if migrated_update is not None:
+            save_migrated(server_id, migrated_update)
         return pathname
     _write_json(path, save_data)
     _write_indexes()
+    if migrated_update is not None:
+        save_migrated(server_id, migrated_update)
     return str(path)
+
+
+def _empty_migrated_store(server_id: str) -> dict:
+    return {"server_id": server_id, "updated_at": None, "players": {}}
+
+
+def get_migrated(server_id: str) -> dict:
+    if is_vercel():
+        remote = read_migrated(server_id)
+        if remote is not None:
+            return remote
+    path = MIGRATED_DIR / f"{server_id}.json"
+    return _read_json(path, _empty_migrated_store(server_id))
+
+
+def save_migrated(server_id: str, data: dict) -> None:
+    if is_vercel():
+        if not write_migrated(server_id, data):
+            raise RuntimeError("Vercel Blob is not connected for migrated players.")
+        return
+    ensure_dirs()
+    _write_json(MIGRATED_DIR / f"{server_id}.json", data)
+
+
+def get_migrated_players(server_id: str) -> list[dict]:
+    entries = get_migrated(server_id).get("players", {})
+    rows = []
+    for role_id, entry in entries.items():
+        snapshot = dict(entry.get("data") or {})
+        snapshot["role_id"] = snapshot.get("role_id") or role_id
+        snapshot["migrated"] = True
+        snapshot["last_seen_dataset"] = entry.get("last_seen_dataset")
+        snapshot["migrated_at"] = entry.get("migrated_at")
+        rows.append(snapshot)
+    return rows
+
+
+def _prepare_migrated_update(
+    server_id: str,
+    new_key: str,
+    new_players: list[dict],
+    existing_datasets: list[dict],
+) -> dict | None:
+    """Build the persistent migrated store when importing a latest snapshot."""
+    latest_key = existing_datasets[-1]["key"] if existing_datasets else None
+    if latest_key and new_key < latest_key:
+        return None
+
+    store = get_migrated(server_id)
+    entries = dict(store.get("players", {}))
+    last_known = {}
+
+    # Newest historical row wins. Existing migrated entries survive even when
+    # their source datasets are later deleted.
+    for metadata in reversed(existing_datasets):
+        historical = get_dataset(server_id, metadata["key"]) or {}
+        for player in historical.get("players", []):
+            role_id = str(player.get("role_id", ""))
+            if role_id and role_id not in last_known:
+                last_known[role_id] = {
+                    "data": player,
+                    "last_seen_dataset": metadata["key"],
+                }
+
+    current_ids = {
+        str(player.get("role_id", "")) for player in new_players if player.get("role_id")
+    }
+    for role_id in current_ids:
+        entries.pop(role_id, None)
+
+    now = datetime.now(timezone.utc).isoformat()
+    for role_id, last in last_known.items():
+        if role_id in current_ids:
+            continue
+        previous = entries.get(role_id, {})
+        entries[role_id] = {
+            "last_seen_dataset": last["last_seen_dataset"],
+            "migrated_at": previous.get("migrated_at") or now,
+            "data": last["data"],
+        }
+
+    return {
+        "server_id": server_id,
+        "updated_at": now,
+        "players": entries,
+    }
 
 
 def get_custom(server_id: str) -> dict:
@@ -205,6 +306,17 @@ def get_player(server_id: str, role_id: str, dataset_key: str | None = None) -> 
         for p in dataset.get("players", []):
             if str(p.get("role_id")) == str(role_id):
                 return {**p, **player_custom, "_custom": player_custom}
+        migrated_entry = get_migrated(server_id).get("players", {}).get(str(role_id))
+        if migrated_entry:
+            snapshot = migrated_entry.get("data") or {}
+            return {
+                **snapshot,
+                **player_custom,
+                "_custom": player_custom,
+                "migrated": True,
+                "last_seen_dataset": migrated_entry.get("last_seen_dataset"),
+                "migrated_at": migrated_entry.get("migrated_at"),
+            }
         # The player may be absent from a newer dataset after migrating.
         for ds in reversed(list_datasets(server_id)):
             if ds["key"] == dataset_key:

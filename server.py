@@ -14,6 +14,7 @@ from lib.data_store import (
     get_custom,
     get_dashboard_stats,
     get_dataset,
+    get_migrated_players,
     get_player,
     list_datasets,
     list_servers,
@@ -68,23 +69,21 @@ def api_dataset(server_id, dataset_key):
     custom = get_custom(server_id)
     datasets = list_datasets(server_id)
     latest_key = datasets[-1]["key"] if datasets else dataset_key
-    latest_dataset = get_dataset(server_id, latest_key) or dataset
-    latest_ids = {str(p.get("role_id", "")) for p in latest_dataset.get("players", [])}
+    migrated_players = get_migrated_players(server_id)
+    migrated_ids = {str(p.get("role_id", "")) for p in migrated_players}
     merged = []
     included_ids = set()
     for p in dataset.get("players", []):
         rid = str(p.get("role_id", ""))
         included_ids.add(rid)
-        merged.append({**p, **custom.get(rid, {}), "migrated": rid not in latest_ids})
-    # On the latest ranking, retain the last known row of migrated players.
+        merged.append({**p, **custom.get(rid, {}), "migrated": rid in migrated_ids})
+    # The latest ranking includes durable snapshots from the migrated store.
     if dataset_key == latest_key:
-        for ds in reversed(datasets[:-1]):
-            old_dataset = get_dataset(server_id, ds["key"]) or {}
-            for p in old_dataset.get("players", []):
-                rid = str(p.get("role_id", ""))
-                if rid and rid not in included_ids:
-                    included_ids.add(rid)
-                    merged.append({**p, **custom.get(rid, {}), "migrated": True})
+        for p in migrated_players:
+            rid = str(p.get("role_id", ""))
+            if rid and rid not in included_ids:
+                included_ids.add(rid)
+                merged.append({**p, **custom.get(rid, {}), "migrated": True})
     return jsonify({**dataset, "players": merged})
 
 

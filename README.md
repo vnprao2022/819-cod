@@ -66,6 +66,9 @@ python scripts/import_excel.py "819_2026-08-01_2026-08-10.xlsx"
   or delete Excel datasets on Vercel. Excel uploads are limited to 4 MB.
 - Imported dataset JSON and custom player fields are saved in the connected
   private Vercel Blob store. Local development continues to use `data/` files.
+- Migrated players are preserved separately in `data/migrated/{server}.json`
+  and `cod-stat/migrated/{server}.json` on Vercel Blob. Deleting an imported
+  dataset does not delete these last-known player snapshots.
 - Set `ADMIN_USERNAME`, `ADMIN_PASSWORD`, and `ADMIN_SESSION_SECRET` in Vercel
   Environment Variables to override the local defaults.
 
