@@ -228,10 +228,22 @@ def get_dashboard_stats(server_id: str, dataset_key: str) -> dict:
         return {}
     players = dataset.get("players", [])
     if not players:
-        return {"total_players": 0, "tier_counts": {"t4": 0, "t5": 0, "eligible": 0}}
+        return {
+            "total_players": 0,
+            "red_artifact_count": 0,
+            "tier_counts": {"t4": 0, "t5": 0, "eligible": 0},
+        }
 
     powers = [p.get("power", 0) or 0 for p in players]
     custom = get_custom(server_id)
+
+    def has_red_artifact(player: dict) -> bool:
+        role_id = str(player.get("role_id", ""))
+        value = custom.get(role_id, {}).get("red_artifact", player.get("red_artifact", False))
+        if isinstance(value, str):
+            return value.strip().lower() in {"1", "true", "yes", "y", "có", "co"}
+        return bool(value)
+
     eligible_players = [p for p in players if (p.get("power", 0) or 0) > 20_000_000]
     t5_count = sum(
         str(custom.get(str(p.get("role_id")), {}).get("tier", "")).strip().upper() == "T5"
@@ -248,6 +260,7 @@ def get_dashboard_stats(server_id: str, dataset_key: str) -> dict:
     }
     return {
         "total_players": len(players),
+        "red_artifact_count": sum(has_red_artifact(player) for player in players),
         "tier_counts": {
             "t4": len(eligible_players) - t5_count,
             "t5": t5_count,

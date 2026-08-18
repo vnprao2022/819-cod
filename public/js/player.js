@@ -51,13 +51,13 @@ async function loadPlayer(roleId) {
       <div class="detail-grid">
         ${DETAIL_FIELDS.filter(f => enriched[f] !== undefined || f === 'mp_ratio').map(f => `
           <div class="detail-item">
-            <div class="label">${fieldLabel(f)}</div>
+            <div class="detail-item-head"><span class="detail-icon-frame">${f === 'tier' ? renderTierIcon(player[f]) : renderFieldIcon(f)}</span><div class="label">${fieldLabel(f)}</div></div>
             <div class="value">${renderDetailValue(f, enriched)}</div>
           </div>
         `).join('')}
         ${['deco', 'red_artifact', 'main', 'tier', 'note'].map(f => `
           <div class="detail-item">
-            <div class="label">${fieldLabel(f)}</div>
+            <div class="detail-item-head"><span class="detail-icon-frame">${renderFieldIcon(f)}</span><div class="label">${fieldLabel(f)}</div></div>
             <div class="value">${renderDetailValue(f, player)}</div>
           </div>
         `).join('')}

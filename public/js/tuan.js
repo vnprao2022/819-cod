@@ -130,11 +130,11 @@ async function saveAdminChanges() {
     await saveCustomData('819', editingPlayer.role_id, fields);
     Object.assign(editingPlayer, fields);
     status.className = 'admin-save-feedback success';
-    status.textContent = `✓ Đã lưu thành công lúc ${new Date().toLocaleTimeString('vi-VN')}`;
+    status.textContent = `Đã lưu thành công lúc ${new Date().toLocaleTimeString('vi-VN')}`;
     renderAdminRanking();
   } catch (err) {
     status.className = 'admin-save-feedback error';
-    status.textContent = `✕ Lưu thất bại: ${err.message}`;
+    status.textContent = `Lưu thất bại: ${err.message}`;
   } finally {
     saveButton.disabled = false;
     saveButton.textContent = 'Lưu thay đổi';

@@ -33,21 +33,22 @@ async function loadDashboard() {
           <div class="eligible-total">${t('eligible_accounts')}: <strong>${(s.tier_counts?.eligible || 0).toLocaleString()}</strong></div>
         </div>
         <div class="tier-cards">
-          <div class="stat-card stat-card-tier stat-card-t4"><div class="label">${t('t4_accounts')}</div><div class="value">${(s.tier_counts?.t4 || 0).toLocaleString()}</div></div>
-          <div class="stat-card stat-card-tier stat-card-t5"><div class="label">${t('t5_accounts')}</div><div class="value">${(s.tier_counts?.t5 || 0).toLocaleString()}</div></div>
+          <div class="stat-card stat-card-tier stat-card-t4"><div class="stat-card-head"><span class="stat-icon-frame">${renderIcon('rank-support', 0)}</span><div class="label">${t('t4_accounts')}</div></div><div class="value">${(s.tier_counts?.t4 || 0).toLocaleString()}</div></div>
+          <div class="stat-card stat-card-tier stat-card-t5"><div class="stat-card-head"><span class="stat-icon-frame">${renderIcon('rank-support', 1)}</span><div class="label">${t('t5_accounts')}</div></div><div class="value">${(s.tier_counts?.t5 || 0).toLocaleString()}</div></div>
         </div>
       </div>
       <div class="stats-grid dashboard-stats-grid">
-        <div class="stat-card stat-card-blue"><div class="label">${t('total_players')}</div><div class="value">${s.total_players.toLocaleString()}</div></div>
-        <div class="stat-card stat-card-indigo"><div class="label">${t('total_power')}</div><div class="value">${formatNumber(s.total_power)}</div></div>
-        <div class="stat-card stat-card-cyan"><div class="label">${t('top_300_power')}</div><div class="value">${formatNumber(s.top_300_power)}</div></div>
-        <div class="stat-card stat-card-violet"><div class="label">${t('top_200_power')}</div><div class="value">${formatNumber(s.top_200_power)}</div></div>
-        <div class="stat-card stat-card-teal"><div class="label">${t('average_power')}</div><div class="value">${formatNumber(s.average_power)}</div></div>
-        <div class="stat-card stat-card-amber"><div class="label">${t('highest_power')}</div><div class="value">${formatNumber(s.highest_power)}</div></div>
-        <div class="stat-card stat-card-red"><div class="label">${t('total_deaths')}</div><div class="value">${formatNumber(s.total_deaths)}</div></div>
-        <div class="stat-card stat-card-orange"><div class="label">${t('total_merit')}</div><div class="value">${formatNumber(s.total_merit)}</div></div>
-        <div class="stat-card stat-card-green"><div class="label">${t('total_healing')}</div><div class="value">${formatNumber(s.total_healing)}</div></div>
-        <div class="stat-card stat-card-lime"><div class="label">${t('total_gathering')}</div><div class="value">${formatNumber(s.total_gathering)}</div></div>
+        <div class="stat-card stat-card-blue"><div class="stat-card-head"><span class="stat-icon-frame">${renderIcon('nav', 2)}</span><div class="label">${t('total_players')}</div></div><div class="value">${s.total_players.toLocaleString()}</div></div>
+        <div class="stat-card stat-card-indigo"><div class="stat-card-head"><span class="stat-icon-frame">${renderIcon('stat', 0)}</span><div class="label">${t('total_power')}</div></div><div class="value">${formatNumber(s.total_power)}</div></div>
+        <div class="stat-card stat-card-cyan"><div class="stat-card-head"><span class="stat-icon-frame">${renderIcon('nav', 1)}</span><div class="label">${t('top_300_power')}</div></div><div class="value">${formatNumber(s.top_300_power)}</div></div>
+        <div class="stat-card stat-card-violet"><div class="stat-card-head"><span class="stat-icon-frame">${renderIcon('nav', 1)}</span><div class="label">${t('top_200_power')}</div></div><div class="value">${formatNumber(s.top_200_power)}</div></div>
+        <div class="stat-card stat-card-teal"><div class="stat-card-head"><span class="stat-icon-frame">${renderIcon('nav', 0)}</span><div class="label">${t('average_power')}</div></div><div class="value">${formatNumber(s.average_power)}</div></div>
+        <div class="stat-card stat-card-amber"><div class="stat-card-head"><span class="stat-icon-frame">${renderIcon('stat', 0)}</span><div class="label">${t('highest_power')}</div></div><div class="value">${formatNumber(s.highest_power)}</div></div>
+        <div class="stat-card stat-card-red"><div class="stat-card-head"><span class="stat-icon-frame">${renderIcon('stat', 2)}</span><div class="label">${t('total_deaths')}</div></div><div class="value">${formatNumber(s.total_deaths)}</div></div>
+        <div class="stat-card stat-card-orange"><div class="stat-card-head"><span class="stat-icon-frame">${renderIcon('stat', 1)}</span><div class="label">${t('total_merit')}</div></div><div class="value">${formatNumber(s.total_merit)}</div></div>
+        <div class="stat-card stat-card-green"><div class="stat-card-head"><span class="stat-icon-frame">${renderIcon('rank-support', 2)}</span><div class="label">${t('total_healing')}</div></div><div class="value">${formatNumber(s.total_healing)}</div></div>
+        <div class="stat-card stat-card-lime"><div class="stat-card-head"><span class="stat-icon-frame">${renderIcon('stat', 4)}</span><div class="label">${t('total_gathering')}</div></div><div class="value">${formatNumber(s.total_gathering)}</div></div>
+        <div class="stat-card stat-card-rose"><div class="stat-card-head"><span class="stat-icon-frame">${renderIcon('rank-support', 3)}</span><div class="label">${t('red_artifact_count')}</div></div><div class="value">${(s.red_artifact_count || 0).toLocaleString()}</div></div>
       </div>
       <h3 style="margin:2rem 0 1rem;font-family:var(--font-display)">${t('power_distribution')}</h3>
       <div class="stats-grid">

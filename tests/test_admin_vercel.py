@@ -75,6 +75,28 @@ class AdminAuthTests(unittest.TestCase):
 
 
 class VercelDatasetStoreTests(unittest.TestCase):
+    def test_dashboard_counts_red_artifact_owners_in_selected_dataset(self):
+        dataset = {
+            "players": [
+                {"role_id": "1", "power": 25_000_000},
+                {"role_id": "2", "power": 30_000_000},
+                {"role_id": "3", "power": 10_000_000},
+            ]
+        }
+        custom = {
+            "1": {"red_artifact": True},
+            "2": {"red_artifact": "yes"},
+            "3": {"red_artifact": False},
+            "999": {"red_artifact": True},
+        }
+        with (
+            patch.object(data_store, "get_dataset", return_value=dataset),
+            patch.object(data_store, "get_custom", return_value=custom),
+        ):
+            stats = data_store.get_dashboard_stats("819", "test")
+
+        self.assertEqual(stats["red_artifact_count"], 2)
+
     def test_save_dataset_writes_json_and_index_to_blob(self):
         dataset = {
             "server_id": "819",

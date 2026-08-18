@@ -11,7 +11,7 @@ document.getElementById('settings-logout').addEventListener('click', async () =>
 async function loadSettings() {
   const info = document.getElementById('server-info');
   if (!currentServer) {
-    info.innerHTML = '<div class="empty-state"><div class="icon">⚙️</div><p>Select a server to view details.</p></div>';
+    info.innerHTML = `<div class="empty-state"><div class="empty-icon-frame">${renderIcon('nav', 4)}</div><p>Select a server to view details.</p></div>`;
     return;
   }
 

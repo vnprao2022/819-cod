@@ -54,10 +54,10 @@ function renderPreview() {
   let alerts = '';
 
   if (d.dataset_exists) {
-    alerts += `<div class="alert alert-warning">⚠ Dataset already exists. Importing will require confirmation to overwrite.</div>`;
+    alerts += `<div class="alert alert-warning">Dataset already exists. Importing will require confirmation to overwrite.</div>`;
   }
   if (d.duplicate_role_ids && d.duplicate_role_ids.length) {
-    alerts += `<div class="alert alert-warning">⚠ Duplicate role_ids found: ${d.duplicate_role_ids.slice(0, 5).join(', ')}${d.duplicate_role_ids.length > 5 ? '...' : ''}</div>`;
+    alerts += `<div class="alert alert-warning">Duplicate role_ids found: ${d.duplicate_role_ids.slice(0, 5).join(', ')}${d.duplicate_role_ids.length > 5 ? '...' : ''}</div>`;
   }
   if (d.warnings && d.warnings.length) {
     alerts += `<div class="alert alert-info">${d.warnings.slice(0, 3).join('<br>')}</div>`;
@@ -128,7 +128,7 @@ async function confirmImport() {
     const result = await API.upload('/api/import/confirm', formData);
     content.innerHTML = `
       <div class="alert alert-success">
-        ✓ Successfully imported ${result.player_count} players for Server ${result.server_id}
+        Successfully imported ${result.player_count} players for Server ${result.server_id}
         (${result.dataset_key})
       </div>
       <div style="margin-top:1rem;display:flex;gap:0.75rem">

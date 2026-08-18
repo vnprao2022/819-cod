@@ -42,8 +42,12 @@ const StaticData = {
     const bucket = (min, max = Infinity) => powers.filter(p => p >= min && p < max).length;
     const eligible = players.filter(p => (Number(p.power) || 0) > 20e6);
     const t5 = eligible.filter(p => String(p.tier || '').trim().toUpperCase() === 'T5').length;
+    const truthy = value => typeof value === 'string'
+      ? ['1', 'true', 'yes', 'y', 'có', 'co'].includes(value.trim().toLowerCase())
+      : Boolean(value);
     return {
       total_players: players.length, total_power: powers.reduce((a, b) => a + b, 0),
+      red_artifact_count: players.filter(p => truthy(p.red_artifact)).length,
       tier_counts: { t4: eligible.length - t5, t5, eligible: eligible.length },
       top_300_power: sorted.slice(0, 300).reduce((a, b) => a + b, 0), top_200_power: sorted.slice(0, 200).reduce((a, b) => a + b, 0),
       average_power: powers.length ? Math.round(powers.reduce((a, b) => a + b, 0) / powers.length) : 0, highest_power: Math.max(0, ...powers),
@@ -238,18 +242,47 @@ function getPlayerStatusLabel(playerOrStatus) {
   return t(`${status}_players`);
 }
 
+const ICON_POSITIONS = ['0%', '25%', '50%', '75%', '100%'];
+const FOUR_ICON_POSITIONS = ['0%', '33.333%', '66.667%', '100%'];
+
+function renderIcon(sprite, index, className = '') {
+  const positions = sprite === 'rank-support' ? FOUR_ICON_POSITIONS : ICON_POSITIONS;
+  const position = positions[index] || positions[0];
+  return `<span class="sprite-icon ${sprite}-sprite ${className}" style="--icon-pos:${position}" aria-hidden="true"></span>`;
+}
+
+function renderTierIcon(value, className = '') {
+  return renderIcon('rank-support', String(value || '').trim().toUpperCase() === 'T5' ? 1 : 0, className);
+}
+
+function renderFieldIcon(field, className = '') {
+  const icons = {
+    rank: ['nav', 1], power: ['stat', 0], highest_power: ['stat', 0],
+    deaths: ['stat', 2], merit: ['stat', 1], mp_ratio: ['stat', 1],
+    gathering: ['stat', 4], healing: ['rank-support', 2], alliance_donation: ['alliance', 0],
+    build_time: ['alliance', 1], destroy_time: ['alliance', 2], resource_aid: ['alliance', 3],
+    behemoth_wins: ['stat', 2], alliance_help: ['alliance', 4],
+    merit_infantry: ['troop', 0], merit_cavalry: ['troop', 1],
+    merit_archer: ['troop', 2], merit_mage: ['troop', 3], merit_other: ['troop', 4],
+    deco: ['nav', 1], red_artifact: ['rank-support', 3], main: ['nav', 2],
+    tier: ['rank-support', 0], note: ['nav', 4],
+  };
+  const [sprite, index] = icons[field] || ['nav', 0];
+  return renderIcon(sprite, index, className);
+}
+
 function renderSidebar(activePage) {
   const server = Store.getServer();
   const pages = [
-    { href: '/', icon: '📊', label: t('nav_dashboard'), id: 'dashboard' },
-    { href: '/players.html', icon: '👥', label: t('nav_rankings'), id: 'players' },
-    { href: '/player.html', icon: '🔍', label: t('nav_player'), id: 'player' },
-    { href: '/rewards.html', icon: '🏆', label: t('nav_rewards'), id: 'rewards' },
-    { href: '/settings.html', icon: '⚙️', label: t('nav_settings'), id: 'settings' },
+    { href: '/', icon: 0, label: t('nav_dashboard'), id: 'dashboard' },
+    { href: '/players.html', icon: 1, label: t('nav_rankings'), id: 'players' },
+    { href: '/player.html', icon: 2, label: t('nav_player'), id: 'player' },
+    { href: '/rewards.html', icon: 3, label: t('nav_rewards'), id: 'rewards' },
+    { href: '/settings.html', icon: 4, label: t('nav_settings'), id: 'settings' },
   ];
 
   return `
-    <button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+    <button class="mobile-toggle" aria-label="Open navigation" onclick="document.querySelector('.sidebar').classList.toggle('open')"><span></span><span></span><span></span></button>
     <aside class="sidebar">
       <div class="sidebar-logo">
         <h1>${t('app_title')}</h1>
@@ -258,7 +291,7 @@ function renderSidebar(activePage) {
       <nav class="sidebar-nav">
         ${pages.map(p => `
           <a href="${p.href}" class="${p.id === activePage ? 'active' : ''}">
-            <span class="icon">${p.icon}</span> ${p.label}
+            <span class="icon-frame">${renderIcon('nav', p.icon)}</span><span>${p.label}</span>
           </a>
         `).join('')}
       </nav>
@@ -325,7 +358,7 @@ function showError(el, msg) {
 }
 
 function showEmpty(el, msg) {
-  el.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>${msg || t('no_data')}</p></div>`;
+  el.innerHTML = `<div class="empty-state"><div class="empty-icon-frame">${renderIcon('nav', 0)}</div><p>${msg || t('no_data')}</p></div>`;
 }
 
 async function saveCustomData(serverId, roleId, fields) {

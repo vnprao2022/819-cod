@@ -57,6 +57,7 @@ const I18N = {
     total_merit: 'Total Merit',
     total_healing: 'Total Healing',
     total_gathering: 'Total Gathering',
+    red_artifact_count: 'Red Artifact Owners',
     view_rankings: 'View Full Rankings',
     data_label: 'Data',
 
@@ -219,6 +220,7 @@ const I18N = {
     total_merit: 'Tổng công trạng',
     total_healing: 'Tổng trị liệu',
     total_gathering: 'Tổng thu thập',
+    red_artifact_count: 'Số người có bảo vật đỏ',
     view_rankings: 'Xem bảng xếp hạng',
     data_label: 'Dữ liệu',
 
@@ -375,6 +377,7 @@ const I18N = {
     total_merit: '총 공훈',
     total_healing: '총 치유',
     total_gathering: '총 채집',
+    red_artifact_count: '레드 아티팩트 보유자',
     view_rankings: '전체 순위 보기',
     data_label: '데이터',
 
@@ -512,9 +515,9 @@ function renderLanguageSelector() {
   return `
     <div class="lang-selector">
       <select id="lang-select" onchange="setLanguage(this.value); location.reload()">
-        <option value="vi" ${currentLang === 'vi' ? 'selected' : ''}>🇻🇳 Tiếng Việt</option>
-        <option value="en" ${currentLang === 'en' ? 'selected' : ''}>🇬🇧 English</option>
-        <option value="ko" ${currentLang === 'ko' ? 'selected' : ''}>🇰🇷 한국어</option>
+        <option value="vi" ${currentLang === 'vi' ? 'selected' : ''}>VI — Tiếng Việt</option>
+        <option value="en" ${currentLang === 'en' ? 'selected' : ''}>EN — English</option>
+        <option value="ko" ${currentLang === 'ko' ? 'selected' : ''}>KO — 한국어</option>
       </select>
     </div>
   `;
