@@ -17,6 +17,10 @@ const StaticData = {
   async custom(serverId) {
     return this.json(`/data/custom/${serverId}.json`).catch(() => ({}));
   },
+  async settings(serverId) {
+    const custom = await this.custom(serverId);
+    return { migration_page_visible: false, honors_visible: true, migration_deadline: '', ...(custom.__settings__ || {}) };
+  },
   async mergedDataset(serverId, key) {
     const [dataset, custom, datasets] = await Promise.all([this.dataset(serverId, key), this.custom(serverId), this.datasets(serverId)]);
     const latest = datasets[datasets.length - 1];
@@ -66,6 +70,8 @@ const StaticData = {
     if (match) { const data = await this.mergedDataset(match[1], match[2]); return { server_id: match[1], date_from: data.date_from, date_to: data.date_to, stats: this.stats((data.players || []).filter(p => !p.migrated)) }; }
     match = path.match(/^\/api\/servers\/([^/]+)\/custom$/);
     if (match) return this.custom(match[1]);
+    match = path.match(/^\/api\/servers\/([^/]+)\/settings$/);
+    if (match) return this.settings(match[1]);
     match = path.match(/^\/api\/servers\/([^/]+)\/player\/([^?]+)(?:\?dataset=([^&]+))?$/);
     if (match) { const data = await this.mergedDataset(match[1], decodeURIComponent(match[3] || Store.getDataset())); const player = data.players.find(p => String(p.role_id) === decodeURIComponent(match[2])); if (player) return { ...player, _custom: (await this.custom(match[1]))[String(player.role_id)] || {} }; throw new Error('Player not found'); }
     throw new Error('This action is available only on localhost.');
@@ -91,7 +97,7 @@ const API = {
 
   async get(path) {
     if (STATIC_MODE) return StaticData.get(path);
-    const res = await fetch(`${this.base}${path}`);
+    const res = await fetch(`${this.base}${path}`, { headers: this.authHeaders() });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: res.statusText }));
       throw new Error(err.error || res.statusText);
@@ -184,6 +190,8 @@ const Store = {
     catch { return null; }
   },
   setColumns(cols) { localStorage.setItem('cod_columns_v3', JSON.stringify(cols)); },
+  getExcludeFarms() { return localStorage.getItem('cod_exclude_farms') === 'true'; },
+  setExcludeFarms(value) { localStorage.setItem('cod_exclude_farms', String(Boolean(value))); },
 };
 
 function formatNumber(n) {
@@ -193,6 +201,12 @@ function formatNumber(n) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
   if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
   return n.toLocaleString();
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',
+  }[char]));
 }
 
 function formatDate(iso) {
@@ -210,9 +224,23 @@ const DEFAULT_COLUMNS = [
   'deco', 'red_artifact', 'main', 'tier',
 ];
 
+const RANKING_COLUMNS = [
+  'rank', 'role_id', 'name', 'power', 'highest_power',
+  'deaths', 'deaths_t4', 'deaths_t5',
+  'severely_wounded', 'severely_wounded_t4', 'severely_wounded_t5',
+  'merit', 'enemy_merit', 'merit_infantry', 'merit_cavalry',
+  'merit_archer', 'merit_mage', 'merit_other', 'gathering',
+  'healing', 'healing_t4', 'healing_t5', 'alliance_donation',
+  'build_time', 'destroy_time', 'resource_aid', 'behemoth_wins',
+  'alliance_help', 'mp_ratio', 'deco', 'red_artifact', 'main',
+  'tier', 'team', 'status', 'note',
+];
+
 const NUMERIC_FIELDS = new Set([
-  'rank', 'power', 'highest_power', 'deaths', 'merit', 'gathering',
-  'healing', 'alliance_donation', 'build_time', 'destroy_time',
+  'rank', 'power', 'highest_power', 'deaths', 'deaths_t4', 'deaths_t5',
+  'severely_wounded', 'severely_wounded_t4', 'severely_wounded_t5',
+  'merit', 'enemy_merit', 'gathering',
+  'healing', 'healing_t4', 'healing_t5', 'alliance_donation', 'build_time', 'destroy_time',
   'resource_aid', 'behemoth_wins', 'alliance_help', 'mp_ratio',
   'merit_infantry', 'merit_cavalry', 'merit_archer', 'merit_mage', 'merit_other',
 ]);
@@ -258,8 +286,10 @@ function renderTierIcon(value, className = '') {
 function renderFieldIcon(field, className = '') {
   const icons = {
     rank: ['nav', 1], power: ['stat', 0], highest_power: ['stat', 0],
-    deaths: ['stat', 2], merit: ['stat', 1], mp_ratio: ['stat', 1],
-    gathering: ['stat', 4], healing: ['rank-support', 2], alliance_donation: ['alliance', 0],
+    deaths: ['stat', 2], deaths_t4: ['stat', 2], deaths_t5: ['stat', 2],
+    severely_wounded: ['stat', 2], severely_wounded_t4: ['stat', 2], severely_wounded_t5: ['stat', 2],
+    merit: ['stat', 1], enemy_merit: ['stat', 1], mp_ratio: ['stat', 1],
+    gathering: ['stat', 4], healing: ['rank-support', 2], healing_t4: ['rank-support', 2], healing_t5: ['rank-support', 2], alliance_donation: ['alliance', 0],
     build_time: ['alliance', 1], destroy_time: ['alliance', 2], resource_aid: ['alliance', 3],
     behemoth_wins: ['stat', 2], alliance_help: ['alliance', 4],
     merit_infantry: ['troop', 0], merit_cavalry: ['troop', 1],
@@ -271,13 +301,14 @@ function renderFieldIcon(field, className = '') {
   return renderIcon(sprite, index, className);
 }
 
-function renderSidebar(activePage) {
+function renderSidebar(activePage, settings = {}) {
   const server = Store.getServer();
   const pages = [
     { href: '/', icon: 0, label: t('nav_dashboard'), id: 'dashboard' },
     { href: '/players.html', icon: 1, label: t('nav_rankings'), id: 'players' },
     { href: '/player.html', icon: 2, label: t('nav_player'), id: 'player' },
     { href: '/rewards.html', icon: 3, label: t('nav_rewards'), id: 'rewards' },
+    ...(settings.migration_page_visible ? [{ href: '/migration.html', icon: 4, label: t('nav_migration'), id: 'migration' }] : []),
     { href: '/settings.html', icon: 4, label: t('nav_settings'), id: 'settings' },
   ];
 
@@ -303,7 +334,10 @@ function renderSidebar(activePage) {
 }
 
 async function initSidebar(activePage) {
-  document.getElementById('sidebar').innerHTML = renderSidebar(activePage);
+  let settings = {};
+  try { settings = await API.get(`/api/servers/${Store.getServer()}/settings`); }
+  catch (_) { /* Keep the core navigation available. */ }
+  document.getElementById('sidebar').innerHTML = renderSidebar(activePage, settings);
 }
 
 async function initServerSelector(containerId, onChange) {

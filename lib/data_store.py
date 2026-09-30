@@ -21,6 +21,12 @@ DATA_DIR = BASE_DIR / "data"
 DATASETS_DIR = DATA_DIR / "datasets"
 CUSTOM_DIR = DATA_DIR / "custom"
 MIGRATED_DIR = DATA_DIR / "migrated"
+SETTINGS_KEY = "__settings__"
+DEFAULT_SITE_SETTINGS = {
+    "migration_page_visible": False,
+    "honors_visible": True,
+    "migration_deadline": "",
+}
 
 
 def _write_indexes():
@@ -170,11 +176,13 @@ def save_dataset(dataset: dict) -> str:
         })
         if migrated_update is not None:
             save_migrated(server_id, migrated_update)
+            reconcile_migration_candidates(server_id, save_data["players"])
         return pathname
     _write_json(path, save_data)
     _write_indexes()
     if migrated_update is not None:
         save_migrated(server_id, migrated_update)
+        reconcile_migration_candidates(server_id, save_data["players"])
     return str(path)
 
 
@@ -293,6 +301,134 @@ def update_player_custom(server_id: str, role_id: str, fields: dict) -> dict:
     custom[role_id].update(fields)
     save_custom(server_id, custom)
     return custom[role_id]
+
+
+def get_site_settings(server_id: str) -> dict:
+    custom = get_custom(server_id)
+    saved = custom.get(SETTINGS_KEY, {})
+    return {
+        key: bool(saved.get(key, default)) if isinstance(default, bool)
+        else str(saved.get(key, default) or "")
+        for key, default in DEFAULT_SITE_SETTINGS.items()
+    }
+
+
+def update_site_settings(server_id: str, fields: dict) -> dict:
+    custom = get_custom(server_id)
+    current = dict(custom.get(SETTINGS_KEY, {}))
+    for key, default in DEFAULT_SITE_SETTINGS.items():
+        if key in fields:
+            current[key] = bool(fields[key]) if isinstance(default, bool) else str(fields[key] or "")
+    custom[SETTINGS_KEY] = current
+    save_custom(server_id, custom)
+    return get_site_settings(server_id)
+
+
+def reconcile_migration_candidates(server_id: str, players: list[dict]) -> int:
+    """Clear migration requests for accounts absent from the newest import."""
+    current_ids = {
+        str(player.get("role_id", "")) for player in players if player.get("role_id")
+    }
+    custom = get_custom(server_id)
+    changed = 0
+    for role_id, fields in custom.items():
+        if role_id == SETTINGS_KEY or not isinstance(fields, dict):
+            continue
+        if fields.get("migration_required") and role_id not in current_ids:
+            fields.update({
+                "migration_required": False,
+                "migration_reason": "",
+                "migration_target": "",
+                "migration_deadline": "",
+                "migration_completed_at": datetime.now(timezone.utc).isoformat(),
+            })
+            changed += 1
+    if changed:
+        save_custom(server_id, custom)
+    return changed
+
+
+def get_migration_candidates(server_id: str, include_hidden: bool = False) -> dict:
+    settings = get_site_settings(server_id)
+    datasets = list_datasets(server_id)
+    if not datasets:
+        return {
+            "visible": settings["migration_page_visible"],
+            "deadline": settings["migration_deadline"],
+            "dataset": None,
+            "players": [],
+        }
+
+    latest = datasets[-1]
+    dataset = get_dataset(server_id, latest["key"]) or {}
+    custom = get_custom(server_id)
+    rows = []
+    for player in dataset.get("players", []):
+        role_id = str(player.get("role_id", ""))
+        fields = custom.get(role_id, {})
+        if not fields.get("migration_required") or fields.get("status") == "migrated":
+            continue
+        rows.append({
+            "role_id": role_id,
+            "name": player.get("name", ""),
+            "power": player.get("power", 0),
+            "reason": fields.get("migration_reason", ""),
+        })
+    rows.sort(key=lambda item: -(item.get("power") or 0))
+    return {
+        "visible": settings["migration_page_visible"],
+        "deadline": settings["migration_deadline"],
+        "dataset": latest,
+        "players": rows if settings["migration_page_visible"] or include_hidden else [],
+    }
+
+
+def get_honors(server_id: str, dataset_key: str) -> list[dict]:
+    dataset = get_dataset(server_id, dataset_key) or {}
+    custom = get_custom(server_id)
+    farm_ids = {
+        str(farm_id)
+        for role_id, fields in custom.items()
+        if role_id != SETTINGS_KEY and isinstance(fields, dict)
+        for farm_id in (fields.get("farm_role_ids") or [])
+    }
+    eligible = [
+        player for player in dataset.get("players", [])
+        if str(player.get("role_id", "")) not in farm_ids
+        and str(custom.get(str(player.get("role_id", "")), {}).get("status", "active")).lower()
+        not in {"migrated", "quit", "rest_ticket"}
+    ]
+    awards = [
+        ("power", "power", 3),
+        ("merit", "merit", 3),
+        ("deaths", "deaths", 1),
+        ("build", "build_time", 1),
+        ("destroy", "destroy_time", 1),
+        ("mp", "mp_ratio", 1),
+        ("gathering", "gathering", 1),
+    ]
+    honors = []
+    for award, field, limit in awards:
+        scored = []
+        for player in eligible:
+            if field == "mp_ratio":
+                power = float(player.get("power", 0) or 0)
+                value = (float(player.get("merit", 0) or 0) / power * 100) if power > 0 else 0
+            else:
+                value = float(player.get(field, 0) or 0)
+            if value > 0:
+                scored.append((value, player))
+        scored.sort(key=lambda item: (item[0], float(item[1].get("power", 0) or 0)), reverse=True)
+        for rank, (value, player) in enumerate(scored[:limit], start=1):
+            honors.append({
+                "award": award,
+                "field": field,
+                "rank": rank,
+                "role_id": str(player.get("role_id", "")),
+                "name": player.get("name", ""),
+                "value": value,
+            })
+    return honors
 
 
 def get_player(server_id: str, role_id: str, dataset_key: str | None = None) -> dict | None:

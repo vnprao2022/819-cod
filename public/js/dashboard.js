@@ -23,7 +23,25 @@ async function loadDashboard() {
       ${t('data_label')}: <span class="date-range">${formatDateRange(data.date_from, data.date_to)}</span>
     `;
 
+    const honors = data.honors_visible && Array.isArray(data.honors) ? data.honors : [];
+    const honorGroups = [...new Set(honors.map(item => item.award))].map(award => ({
+      award,
+      items: honors.filter(item => item.award === award).sort((a, b) => (a.rank || 1) - (b.rank || 1)),
+    }));
+    const formatHonorValue = item => item.field === 'mp_ratio' ? `${Number(item.value || 0).toFixed(2)}%` : formatNumber(item.value);
+    const honorsHtml = honorGroups.length ? `
+      <section class="honors-section">
+        <div class="section-heading"><div><span class="eyebrow">${t('honors_kicker')}</span><h3>${t('honors_title')}</h3><p>${t('honors_note')}</p></div></div>
+        <div class="honors-grid">
+          ${honorGroups.map(group => `<article class="honor-card honor-${group.award}">
+            <div class="honor-card-head"><span class="honor-label">${t(`honor_${group.award}`)}</span><span class="honor-count">${group.items.length > 1 ? 'TOP 3' : 'TOP 1'}</span></div>
+            <div class="honor-list">${group.items.map(item => `<a class="honor-row" href="/player.html?id=${encodeURIComponent(item.role_id)}"><span class="honor-rank">${item.rank}</span><span class="honor-name">${escapeHtml(item.name || item.role_id)}</span><strong>${formatHonorValue(item)}</strong></a>`).join('')}</div>
+          </article>`).join('')}
+        </div>
+      </section>` : '';
+
     content.innerHTML = `
+      ${honorsHtml}
       <div class="tier-summary">
         <div class="tier-summary-header">
           <div>

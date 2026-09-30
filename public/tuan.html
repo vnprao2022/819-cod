@@ -28,7 +28,9 @@
       <div class="page-header admin-page-title"><div><h2>Account Management</h2><p class="subtitle">Server 819 · Custom stats, farm links and Excel datasets</p></div><button class="btn btn-secondary" id="tuan-logout">Logout</button></div>
       <div class="admin-tabs">
         <button class="admin-tab active" data-admin-tab="players">Accounts</button>
+        <button class="admin-tab" data-admin-tab="migration">Quản lý Di cư</button>
         <button class="admin-tab" data-admin-tab="datasets">Import Excel & Datasets</button>
+        <button class="admin-tab" data-admin-tab="visibility">Hiển thị Dashboard</button>
       </div>
       <div id="static-admin-notice"></div>
       <section id="admin-tab-players">
@@ -39,6 +41,35 @@
         <div id="admin-ranking"></div>
         <div id="admin-editor"></div>
       </section>
+      <section id="admin-tab-migration" hidden>
+        <div class="migration-manager-hero">
+          <div class="migration-manager-icon" aria-hidden="true">⇄</div>
+          <div class="migration-manager-copy">
+            <span class="eyebrow">QUẢN LÝ DI CƯ</span>
+            <h3>Danh sách cần rời kingdom</h3>
+            <p>Thêm thủ công người không đạt KPI, ghi rõ lý do và quản lý bằng một thời hạn chung.</p>
+          </div>
+          <div class="migration-manager-total"><strong id="migration-admin-total">0</strong><span>tài khoản</span></div>
+        </div>
+        <div class="migration-manager-settings">
+          <label><span>Hạn di cư chung</span><input type="date" id="migration-global-deadline"></label>
+          <label class="visibility-toggle compact"><input type="checkbox" id="migration-page-visible"><span><strong>Hiển thị trang Di cư</strong><small>Tắt để ẩn khỏi người xem nhưng vẫn giữ danh sách quản trị.</small></span></label>
+          <button class="btn btn-primary" id="save-migration-settings">Lưu cài đặt</button>
+          <span id="migration-settings-status" class="admin-save-feedback" role="status" aria-live="polite"></span>
+        </div>
+        <div class="migration-manager-grid">
+          <section class="migration-add-card">
+            <span class="eyebrow">THÊM NGƯỜI CHƠI</span>
+            <h4>Tìm trong dữ liệu mới nhất</h4>
+            <input type="search" id="migration-player-search" placeholder="Tên hoặc Player ID...">
+            <div id="migration-search-results" class="migration-search-results"></div>
+          </section>
+          <section class="migration-list-card">
+            <div class="migration-list-card-head"><div><span class="eyebrow">DANH SÁCH HIỆN TẠI</span><h4>Người chơi cần di cư</h4></div><span class="badge badge-migration" id="migration-list-count">0 người</span></div>
+            <div id="migration-admin-list"></div>
+          </section>
+        </div>
+      </section>
       <section id="admin-tab-datasets" hidden>
         <div class="dataset-admin-header">
           <div><h3>Imported Datasets</h3><p>Import, replace or delete Excel data on localhost or Vercel. Custom player data is stored separately and will be preserved.</p></div>
@@ -47,6 +78,14 @@
         <input type="file" id="admin-excel-file" accept=".xlsx" hidden>
         <div id="admin-import-panel"></div>
         <div id="admin-datasets-list"></div>
+      </section>
+      <section id="admin-tab-visibility" hidden>
+        <div class="visibility-admin-card">
+          <h3>Hiển thị trên Dashboard</h3>
+          <p>Bật hoặc tắt Bảng vinh danh tự động trên trang Tổng quan.</p>
+          <label class="visibility-toggle"><input type="checkbox" id="honors-visible"><span><strong>Hiển thị Bảng vinh danh</strong><small>Hệ thống tự chọn người dẫn đầu và loại toàn bộ tài khoản farm.</small></span></label>
+          <div class="admin-save-row"><button class="btn btn-primary" id="save-visibility">Lưu cài đặt</button><span id="visibility-save-status" class="admin-save-feedback" role="status" aria-live="polite"></span></div>
+        </div>
       </section>
     </div>
   </main>

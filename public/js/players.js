@@ -3,13 +3,17 @@ let currentDataset = Store.getDataset();
 let allPlayers = [];
 let filteredPlayers = [];
 let sortCol = 'rank';
-let sortDir = 'desc';
+let sortDir = 'asc';
 let currentPage = 1;
 const PAGE_SIZE = 50;
-let visibleColumns = Store.getColumns() || [...DEFAULT_COLUMNS];
+let visibleColumns = RANKING_COLUMNS.filter(col => (Store.getColumns() || DEFAULT_COLUMNS).includes(col));
+let excludeFarmAccounts = Store.getExcludeFarms();
 
 function renderColumnPicker() {
-  const allCols = [...new Set([...DEFAULT_COLUMNS, ...allPlayers.length ? Object.keys(allPlayers[0]) : []])];
+  const present = new Set(allPlayers.flatMap(player => Object.keys(player)));
+  const allCols = RANKING_COLUMNS.filter(col => DEFAULT_COLUMNS.includes(col) || present.has(col));
+  visibleColumns = visibleColumns.filter(col => allCols.includes(col));
+  if (!visibleColumns.length) visibleColumns = [...DEFAULT_COLUMNS];
   const dropdown = document.getElementById('column-dropdown');
   dropdown.innerHTML = allCols.map(col => `
     <label>
@@ -21,7 +25,8 @@ function renderColumnPicker() {
   dropdown.querySelectorAll('input').forEach(cb => {
     cb.addEventListener('change', () => {
       if (cb.checked) {
-        if (!visibleColumns.includes(cb.value)) visibleColumns.push(cb.value);
+        const selected = new Set([...visibleColumns, cb.value]);
+        visibleColumns = RANKING_COLUMNS.filter(col => selected.has(col));
       } else {
         visibleColumns = visibleColumns.filter(c => c !== cb.value);
       }
@@ -34,12 +39,14 @@ function renderColumnPicker() {
 function filterPlayers(query) {
   const q = query.toLowerCase().trim();
   const migration = document.getElementById('migration-filter')?.value || 'active';
+  const farmIds = new Set(allPlayers.flatMap(player => Array.isArray(player.farm_role_ids) ? player.farm_role_ids.map(String) : []));
   filteredPlayers = allPlayers.filter(p => {
     const id = String(p.role_id || '');
     const name = (p.name || '').toLowerCase();
     const matchesQuery = !q || id.includes(q) || name.includes(q);
     const matchesStatus = migration === 'all' || getPlayerStatus(p) === migration;
-    return matchesQuery && matchesStatus;
+    const matchesFarmFilter = !excludeFarmAccounts || !farmIds.has(id);
+    return matchesQuery && matchesStatus && matchesFarmFilter;
   });
   const count = document.getElementById('account-count');
   if (count) count.textContent = filteredPlayers.length;
@@ -72,7 +79,8 @@ function applyCurrentSort() {
   });
 }
 
-function renderCell(col, p) {
+function renderCell(col, p, position) {
+  if (col === 'rank') return formatNumber(position);
   if (col === 'mp_ratio') return formatMP(p.merit, p.power);
   if (CUSTOM_FIELDS.includes(col)) return renderCustomCell(col, p);
   if (col === 'red_artifact') {
@@ -81,7 +89,7 @@ function renderCell(col, p) {
   }
   if (col === 'main') return getMainLabel(p[col]);
   if (NUMERIC_FIELDS.has(col)) return formatNumber(p[col]);
-  return p[col] ?? '-';
+  return p[col] == null || p[col] === '' ? '-' : escapeHtml(p[col]);
 }
 
 function renderTable() {
@@ -105,19 +113,19 @@ function renderTable() {
           `).join('')}
         </tr></thead>
         <tbody>
-          ${page.map(p => `
+          ${page.map((p, pageIndex) => `
             <tr>
               ${cols.map(col => {
                 if (col === 'role_id') {
-                  return `<td class="role-id number" onclick="location.href='/player.html?id=${p.role_id}'">${p.role_id}</td>`;
+                  return `<td class="role-id number" onclick="location.href='/player.html?id=${encodeURIComponent(p.role_id)}'">${escapeHtml(p.role_id)}</td>`;
                 }
                 if (col === 'name') {
                   const status = getPlayerStatus(p);
                   const badge = status === 'active' ? '' : `<span class="badge badge-status badge-${status}">${getPlayerStatusLabel(status)}</span>`;
-                  return `<td class="name" onclick="location.href='/player.html?id=${p.role_id}'" style="cursor:pointer">${p.name || '-'} ${badge}</td>`;
+                  return `<td class="name" onclick="location.href='/player.html?id=${encodeURIComponent(p.role_id)}'" style="cursor:pointer">${escapeHtml(p.name || '-')} ${badge}</td>`;
                 }
                 const cls = NUMERIC_FIELDS.has(col) || col === 'mp_ratio' ? 'number' : '';
-                return `<td class="${cls}">${renderCell(col, p)}</td>`;
+                return `<td class="${cls}">${renderCell(col, p, start + pageIndex + 1)}</td>`;
               }).join('')}
             </tr>
           `).join('')}
@@ -168,7 +176,7 @@ async function loadPlayers() {
     const data = await API.get(`/api/servers/${currentServer}/dataset/${currentDataset}`);
     allPlayers = (data.players || []).map(enrichPlayer);
     filterPlayers(document.getElementById('search-input').value);
-    sortPlayers(sortCol);
+    applyCurrentSort();
 
     subtitle.innerHTML = `
       SERVER <strong>${data.server_id}</strong> &nbsp;|&nbsp;
@@ -208,6 +216,14 @@ document.getElementById('migration-filter').addEventListener('change', () => {
   applyCurrentSort();
   renderTable();
 });
+document.getElementById('exclude-farms').addEventListener('change', event => {
+  excludeFarmAccounts = event.target.checked;
+  Store.setExcludeFarms(excludeFarmAccounts);
+  filterPlayers(document.getElementById('search-input').value);
+  currentPage = 1;
+  applyCurrentSort();
+  renderTable();
+});
 
 document.getElementById('column-toggle').addEventListener('click', () => {
   document.getElementById('column-dropdown').classList.toggle('open');
@@ -232,6 +248,9 @@ document.addEventListener('click', (e) => {
   document.querySelector('#migration-filter option[value="migrated"]').textContent = t('migrated_players');
   document.querySelector('#migration-filter option[value="quit"]').textContent = t('quit_players');
   document.querySelector('#migration-filter option[value="rest_ticket"]').textContent = t('rest_ticket_players');
+  document.getElementById('exclude-farms').checked = excludeFarmAccounts;
+  document.getElementById('exclude-farms-label').textContent = t('exclude_farms');
+  document.getElementById('exclude-farms-hint').textContent = t('exclude_farms_hint');
   await initServerSelector('server-selector', onServerChange);
   if (currentServer) {
     currentDataset = await initDatasetSelector('dataset-selector', currentServer, onDatasetChange);

@@ -1,11 +1,14 @@
 import unittest
 from io import BytesIO
+from pathlib import Path
+import tempfile
 from unittest.mock import patch
 
 from openpyxl import Workbook
 
 from lib.auth import is_valid_token, login
 from lib import data_store
+from lib.excel_parser import read_excel
 from server import app
 
 
@@ -73,6 +76,36 @@ class AdminAuthTests(unittest.TestCase):
         self.assertEqual(confirm.status_code, 200)
         self.assertEqual(confirm.get_json()["dataset_key"], "2099-01-01_2099-01-01")
 
+    def test_migration_fields_require_reason_only(self):
+        token = login("admin", "admin123")
+        headers = {"Authorization": f"Bearer {token}"}
+        invalid = self.client.put(
+            "/api/servers/819/custom/123",
+            json={"migration_required": True},
+            headers=headers,
+        )
+        self.assertEqual(invalid.status_code, 400)
+
+        with patch("server.update_player_custom", return_value={"migration_required": True}):
+            valid = self.client.put(
+                "/api/servers/819/custom/123",
+                json={
+                    "migration_required": True,
+                    "migration_reason": "Không đủ KPI",
+                },
+                headers=headers,
+            )
+        self.assertEqual(valid.status_code, 200)
+
+    def test_public_settings_and_admin_visibility_update(self):
+        with patch("server.get_site_settings", return_value={"migration_page_visible": True, "honors_visible": False}):
+            response = self.client.get("/api/servers/819/settings")
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.get_json()["migration_page_visible"])
+
+        unauthorized = self.client.put("/api/servers/819/settings", json={"honors_visible": True})
+        self.assertEqual(unauthorized.status_code, 403)
+
     def test_latest_ranking_includes_players_from_migrated_store(self):
         dataset = {
             "server_id": "819",
@@ -99,6 +132,106 @@ class AdminAuthTests(unittest.TestCase):
 
 
 class VercelDatasetStoreTests(unittest.TestCase):
+    def test_new_excel_split_columns_are_mapped_and_aggregated(self):
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.append([
+            "ID Nhân Vật", "Tên Nhân Vật", "T4 Tử Vong", "T5 Tử Vong",
+            "T4 Bị Thương Nặng", "T5 Bị Thương Nặng",
+            "T4 Được Trị Liệu", "T5 Được Trị Liệu", "Công Trạng Của Địch",
+        ])
+        sheet.append(["123", "Tester", 10, 20, 30, 40, 50, 60, 70])
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "819_2026-09-01_2026-09-30.xlsx"
+            workbook.save(path)
+            parsed = read_excel(path)
+
+        player = parsed["players"][0]
+        self.assertEqual(player["deaths"], 30)
+        self.assertEqual(player["severely_wounded"], 70)
+        self.assertEqual(player["healing"], 110)
+        self.assertEqual(player["enemy_merit"], 70)
+        self.assertNotIn("t4_tu_vong", parsed["column_map"].values())
+
+    def test_honors_exclude_linked_farm_accounts(self):
+        dataset = {
+            "players": [
+                {"role_id": "main", "name": "Main", "power": 100, "merit": 80, "deaths": 10, "gathering": 20},
+                {"role_id": "farm", "name": "Farm", "power": 999, "merit": 999, "deaths": 999, "gathering": 999},
+            ]
+        }
+        custom = {"main": {"farm_role_ids": ["farm"]}}
+        with (
+            patch.object(data_store, "get_dataset", return_value=dataset),
+            patch.object(data_store, "get_custom", return_value=custom),
+        ):
+            honors = data_store.get_honors("819", "latest")
+        self.assertEqual({item["role_id"] for item in honors}, {"main"})
+
+    def test_honors_include_top_three_and_new_metrics(self):
+        players = [
+            {"role_id": "1", "name": "Power 1", "power": 100, "merit": 10, "deaths": 1, "build_time": 4, "destroy_time": 1, "gathering": 1},
+            {"role_id": "2", "name": "Power 2", "power": 90, "merit": 20, "deaths": 2, "build_time": 3, "destroy_time": 2, "gathering": 2},
+            {"role_id": "3", "name": "Power 3", "power": 80, "merit": 30, "deaths": 3, "build_time": 2, "destroy_time": 3, "gathering": 3},
+            {"role_id": "4", "name": "Power 4", "power": 70, "merit": 40, "deaths": 4, "build_time": 1, "destroy_time": 4, "gathering": 4},
+        ]
+        with (
+            patch.object(data_store, "get_dataset", return_value={"players": players}),
+            patch.object(data_store, "get_custom", return_value={}),
+        ):
+            honors = data_store.get_honors("819", "latest")
+        power = [item for item in honors if item["award"] == "power"]
+        merit = [item for item in honors if item["award"] == "merit"]
+        self.assertEqual([item["role_id"] for item in power], ["1", "2", "3"])
+        self.assertEqual([item["role_id"] for item in merit], ["4", "3", "2"])
+        self.assertEqual({item["award"] for item in honors}, {"power", "merit", "deaths", "build", "destroy", "mp", "gathering"})
+
+    def test_migration_list_only_uses_current_players_and_visibility(self):
+        custom = {
+            data_store.SETTINGS_KEY: {"migration_page_visible": True, "migration_deadline": "2026-10-15"},
+            "1": {"migration_required": True, "migration_reason": "KPI"},
+            "2": {"migration_required": True, "migration_reason": "KPI"},
+        }
+        with (
+            patch.object(data_store, "list_datasets", return_value=[{"key": "latest", "date_from": "2026-09-01", "date_to": "2026-09-30"}]),
+            patch.object(data_store, "get_dataset", return_value={"players": [{"role_id": "1", "name": "Current", "power": 10}]}),
+            patch.object(data_store, "get_custom", return_value=custom),
+        ):
+            result = data_store.get_migration_candidates("819")
+        self.assertTrue(result["visible"])
+        self.assertEqual(result["deadline"], "2026-10-15")
+        self.assertEqual([player["role_id"] for player in result["players"]], ["1"])
+
+    def test_admin_can_read_migration_list_while_public_page_is_hidden(self):
+        custom = {
+            data_store.SETTINGS_KEY: {"migration_page_visible": False, "migration_deadline": "2026-10-20"},
+            "1": {"migration_required": True, "migration_reason": "KPI"},
+        }
+        with (
+            patch.object(data_store, "list_datasets", return_value=[{"key": "latest"}]),
+            patch.object(data_store, "get_dataset", return_value={"players": [{"role_id": "1", "name": "Current"}]}),
+            patch.object(data_store, "get_custom", return_value=custom),
+        ):
+            public = data_store.get_migration_candidates("819")
+            admin = data_store.get_migration_candidates("819", include_hidden=True)
+        self.assertEqual(public["players"], [])
+        self.assertEqual([player["role_id"] for player in admin["players"]], ["1"])
+
+    def test_reconcile_clears_migration_after_account_leaves_latest_import(self):
+        custom = {
+            "1": {"migration_required": True, "migration_reason": "KPI"},
+            "2": {"migration_required": True, "migration_reason": "KPI"},
+        }
+        with (
+            patch.object(data_store, "get_custom", return_value=custom),
+            patch.object(data_store, "save_custom") as save_custom,
+        ):
+            changed = data_store.reconcile_migration_candidates("819", [{"role_id": "1"}])
+        self.assertEqual(changed, 1)
+        self.assertTrue(custom["1"]["migration_required"])
+        self.assertFalse(custom["2"]["migration_required"])
+        save_custom.assert_called_once()
+
     def test_dashboard_counts_red_artifact_owners_in_selected_dataset(self):
         dataset = {
             "players": [
@@ -149,6 +282,7 @@ class VercelDatasetStoreTests(unittest.TestCase):
             patch.object(data_store, "write_blob_dataset_index") as write_index,
             patch.object(data_store, "get_migrated", return_value={"server_id": "819", "players": {}}),
             patch.object(data_store, "save_migrated") as save_migrated,
+            patch.object(data_store, "save_custom"),
         ):
             path = data_store.save_dataset(dataset)
 

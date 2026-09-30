@@ -67,6 +67,19 @@ def read_excel(filepath: str | Path, source_filename: str | None = None) -> dict
             val = row[col_idx] if col_idx < len(row) else None
             player[col_info["field"]] = parse_value(col_info["field"], val)
 
+        # Newer CoD Game Tools exports split deaths and healing into T4/T5
+        # columns. Keep the components, and also restore the aggregate fields
+        # used by the dashboard and the existing ranking UI.
+        if "deaths" not in player and ({"deaths_t4", "deaths_t5"} & set(player)):
+            player["deaths"] = (player.get("deaths_t4", 0) or 0) + (player.get("deaths_t5", 0) or 0)
+        if "healing" not in player and ({"healing_t4", "healing_t5"} & set(player)):
+            player["healing"] = (player.get("healing_t4", 0) or 0) + (player.get("healing_t5", 0) or 0)
+        if {"severely_wounded_t4", "severely_wounded_t5"} & set(player):
+            player["severely_wounded"] = (
+                (player.get("severely_wounded_t4", 0) or 0)
+                + (player.get("severely_wounded_t5", 0) or 0)
+            )
+
         role_id = player.get("role_id", "")
         if not role_id:
             warnings.append(f"Row {row_idx}: missing role_id, skipped.")

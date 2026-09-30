@@ -8,6 +8,9 @@ let linkedFarmIds = [];
 let selectedExcelFile = null;
 let importPreview = null;
 let replaceDatasetKey = '';
+let migrationAdminData = { players: [], deadline: '', visible: false };
+let selectedMigrationPlayer = null;
+let migrationAvailablePlayers = [];
 
 function filterAdminRanking() {
   const q = document.getElementById('admin-player-search').value.trim().toLowerCase();
@@ -152,11 +155,169 @@ async function loadAdminPlayers() {
   } catch (err) { showError(target, err.message); }
 }
 
+function renderMigrationSearchResults(query = '') {
+  const target = document.getElementById('migration-search-results');
+  if (!target) return;
+  if (selectedMigrationPlayer) {
+    target.innerHTML = `<div class="migration-add-form">
+      <div class="migration-add-player"><strong>${escapeHtml(selectedMigrationPlayer.name || '-')}</strong><span>${escapeHtml(selectedMigrationPlayer.role_id)} · ${formatNumber(selectedMigrationPlayer.power)}</span></div>
+      <label for="migration-new-reason">Lý do không đạt KPI</label>
+      <textarea id="migration-new-reason" rows="4" maxlength="500" placeholder="Nhập lý do hiển thị cho người chơi..."></textarea>
+      <div class="migration-add-actions"><button class="btn btn-primary" id="confirm-add-migration">Thêm vào danh sách</button><button class="btn btn-secondary" id="cancel-add-migration">Hủy</button></div>
+      <div id="migration-add-status" class="admin-save-feedback"></div>
+    </div>`;
+    document.getElementById('confirm-add-migration').addEventListener('click', async () => {
+      const reason = document.getElementById('migration-new-reason').value.trim();
+      const status = document.getElementById('migration-add-status');
+      if (!reason) { status.className = 'admin-save-feedback error'; status.textContent = 'Vui lòng nhập lý do.'; return; }
+      const saved = await saveMigrationPlayer(selectedMigrationPlayer.role_id, true, reason, status);
+      if (!saved) return;
+      selectedMigrationPlayer = null;
+      document.getElementById('migration-player-search').value = '';
+      renderMigrationSearchResults();
+    });
+    document.getElementById('cancel-add-migration').addEventListener('click', () => { selectedMigrationPlayer = null; renderMigrationSearchResults(query); });
+    return;
+  }
+
+  const q = query.trim().toLowerCase();
+  const listedIds = new Set((migrationAdminData.players || []).map(player => String(player.role_id)));
+  const matches = migrationAvailablePlayers.filter(player => {
+    const id = String(player.role_id || '');
+    return getPlayerStatus(player) === 'active' && !listedIds.has(id) &&
+      (!q || id.includes(q) || String(player.name || '').toLowerCase().includes(q));
+  }).slice(0, q ? 12 : 6);
+  target.innerHTML = matches.map(player => `<button type="button" class="migration-search-result" data-migration-player="${escapeHtml(player.role_id)}">
+    <span><strong>${escapeHtml(player.name || '-')}</strong><small>${escapeHtml(player.role_id)}</small></span><b>＋</b>
+  </button>`).join('') || '<div class="muted-text migration-no-result">Không tìm thấy người chơi phù hợp.</div>';
+  target.querySelectorAll('[data-migration-player]').forEach(button => button.addEventListener('click', () => {
+    selectedMigrationPlayer = migrationAvailablePlayers.find(player => String(player.role_id) === button.dataset.migrationPlayer) || null;
+    renderMigrationSearchResults(query);
+  }));
+}
+
+function renderMigrationAdminList() {
+  const target = document.getElementById('migration-admin-list');
+  const players = migrationAdminData.players || [];
+  document.getElementById('migration-admin-total').textContent = players.length;
+  document.getElementById('migration-list-count').textContent = `${players.length} người`;
+  if (!players.length) {
+    target.innerHTML = '<div class="empty-state migration-admin-empty"><p>Chưa có người chơi nào trong danh sách di cư.</p></div>';
+    return;
+  }
+  target.innerHTML = `<div class="migration-admin-rows">${players.map(player => `<article class="migration-admin-player" data-role-id="${escapeHtml(player.role_id)}">
+    <div class="migration-admin-player-head"><div class="player-avatar">${escapeHtml((player.name || '?')[0])}</div><div><strong>${escapeHtml(player.name || '-')}</strong><span>${escapeHtml(player.role_id)} · ${formatNumber(player.power)}</span></div></div>
+    <label>Lý do không đạt KPI<textarea rows="3" maxlength="500">${escapeHtml(player.reason || '')}</textarea></label>
+    <div class="migration-admin-actions"><button class="btn btn-primary btn-sm" data-save-migration>Lưu lý do</button><button class="btn btn-danger btn-sm" data-remove-migration>Xóa khỏi danh sách</button><span class="admin-save-feedback"></span></div>
+  </article>`).join('')}</div>`;
+  target.querySelectorAll('[data-save-migration]').forEach(button => button.addEventListener('click', async () => {
+    const card = button.closest('.migration-admin-player');
+    await saveMigrationPlayer(card.dataset.roleId, true, card.querySelector('textarea').value.trim(), card.querySelector('.admin-save-feedback'));
+  }));
+  target.querySelectorAll('[data-remove-migration]').forEach(button => button.addEventListener('click', async () => {
+    const card = button.closest('.migration-admin-player');
+    const player = migrationAdminData.players.find(item => String(item.role_id) === card.dataset.roleId);
+    if (!confirm(`Xóa ${player?.name || card.dataset.roleId} khỏi danh sách di cư?`)) return;
+    await saveMigrationPlayer(card.dataset.roleId, false, '', card.querySelector('.admin-save-feedback'));
+  }));
+}
+
+async function saveMigrationPlayer(roleId, required, reason, status) {
+  status.className = 'admin-save-feedback saving';
+  status.textContent = 'Đang lưu...';
+  try {
+    await saveCustomData('819', roleId, { migration_required: required, migration_reason: reason });
+    const player = adminPlayers.find(item => String(item.role_id) === String(roleId));
+    if (player) Object.assign(player, { migration_required: required, migration_reason: required ? reason : '' });
+    await loadMigrationManager();
+    return true;
+  } catch (error) {
+    status.className = 'admin-save-feedback error';
+    status.textContent = `Lỗi: ${error.message}`;
+    return false;
+  }
+}
+
+async function loadMigrationManager() {
+  const target = document.getElementById('migration-admin-list');
+  showLoading(target);
+  try {
+    migrationAdminData = await API.get('/api/admin/servers/819/migration');
+    if (migrationAdminData.dataset?.key) {
+      const latest = await API.get(`/api/servers/819/dataset/${migrationAdminData.dataset.key}`);
+      migrationAvailablePlayers = (latest.players || []).filter(player => !player.migrated && getPlayerStatus(player) === 'active');
+    } else {
+      migrationAvailablePlayers = [];
+    }
+    document.getElementById('migration-global-deadline').value = migrationAdminData.deadline || '';
+    document.getElementById('migration-page-visible').checked = Boolean(migrationAdminData.visible);
+    renderMigrationAdminList();
+    renderMigrationSearchResults(document.getElementById('migration-player-search').value);
+  } catch (error) {
+    showError(target, error.message);
+  }
+}
+
+async function saveMigrationSettings() {
+  const button = document.getElementById('save-migration-settings');
+  const status = document.getElementById('migration-settings-status');
+  button.disabled = true;
+  try {
+    const settings = await API.put('/api/servers/819/settings', {
+      migration_page_visible: document.getElementById('migration-page-visible').checked,
+      migration_deadline: document.getElementById('migration-global-deadline').value,
+    });
+    migrationAdminData.visible = settings.migration_page_visible;
+    migrationAdminData.deadline = settings.migration_deadline;
+    status.className = 'admin-save-feedback success';
+    status.textContent = 'Đã lưu hạn chung và trạng thái hiển thị.';
+  } catch (error) {
+    status.className = 'admin-save-feedback error';
+    status.textContent = `Lưu thất bại: ${error.message}`;
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function switchAdminTab(tab) {
   document.querySelectorAll('.admin-tab').forEach(button => button.classList.toggle('active', button.dataset.adminTab === tab));
   document.getElementById('admin-tab-players').hidden = tab !== 'players';
+  document.getElementById('admin-tab-migration').hidden = tab !== 'migration';
   document.getElementById('admin-tab-datasets').hidden = tab !== 'datasets';
+  document.getElementById('admin-tab-visibility').hidden = tab !== 'visibility';
   if (tab === 'datasets') loadDatasetManager();
+  if (tab === 'migration') loadMigrationManager();
+  if (tab === 'visibility') loadVisibilitySettings();
+}
+
+async function loadVisibilitySettings() {
+  const status = document.getElementById('visibility-save-status');
+  status.textContent = '';
+  try {
+    const settings = await API.get('/api/servers/819/settings');
+    document.getElementById('honors-visible').checked = Boolean(settings.honors_visible);
+  } catch (err) {
+    status.className = 'admin-save-feedback error';
+    status.textContent = `Không tải được cài đặt: ${err.message}`;
+  }
+}
+
+async function saveVisibilitySettings() {
+  const button = document.getElementById('save-visibility');
+  const status = document.getElementById('visibility-save-status');
+  button.disabled = true;
+  try {
+    await API.put('/api/servers/819/settings', {
+      honors_visible: document.getElementById('honors-visible').checked,
+    });
+    status.className = 'admin-save-feedback success';
+    status.textContent = 'Đã lưu cài đặt hiển thị.';
+  } catch (err) {
+    status.className = 'admin-save-feedback error';
+    status.textContent = `Lưu thất bại: ${err.message}`;
+  } finally {
+    button.disabled = false;
+  }
 }
 
 async function loadDatasetManager() {
@@ -258,12 +419,18 @@ function resetExcelImport() {
 
 function bindAdminEvents() {
   document.getElementById('admin-player-search').addEventListener('input', filterAdminRanking);
+  document.getElementById('migration-player-search').addEventListener('input', event => {
+    selectedMigrationPlayer = null;
+    renderMigrationSearchResults(event.target.value);
+  });
+  document.getElementById('save-migration-settings').addEventListener('click', saveMigrationSettings);
   document.querySelectorAll('.admin-tab').forEach(button => button.addEventListener('click', () => switchAdminTab(button.dataset.adminTab)));
   document.getElementById('new-import-btn').addEventListener('click', () => {
     resetExcelImport();
     document.getElementById('admin-excel-file').click();
   });
   document.getElementById('admin-excel-file').addEventListener('change', e => { if (e.target.files.length) previewExcelImport(e.target.files[0]); });
+  document.getElementById('save-visibility').addEventListener('click', saveVisibilitySettings);
 }
 
 async function initializeAdminPage() {

@@ -60,6 +60,7 @@ Chọn khoảng ngày tại ô **Dữ liệu**. Kỳ được chọn sẽ đư�
 - **Tổng tử vong, công trạng, trị liệu và thu thập.**
 - **Số người có bảo vật đỏ:** đếm người được đánh dấu Artifact = Yes trong trang quản trị.
 - **Phân bố lực chiến:** chia tài khoản theo các mốc 0–20M, 20–40M, 40–60M, 60–80M, 80–100M và trên 100M.
+- **Bảng vinh danh:** tự động chọn Top 1–3 về lực chiến và công trạng; Top 1 về tử vong, xây dựng, phá hủy, M/P và thu thập. Các tài khoản đã được gắn làm farm sẽ bị loại khỏi phần này. Quản trị viên có thể ẩn hoặc hiện toàn bộ bảng.
 
 Sau mỗi lần import, nên vào trang này trước để kiểm tra tổng số tài khoản, ngày dữ liệu và các tổng lớn có hợp lý hay không.
 
@@ -191,6 +192,14 @@ Những trường này được lưu riêng, không bị ghi đè khi import Exc
 
 Liên kết farm được sử dụng trực tiếp trong trang Tính thưởng tuần.
 
+### Quản lý trang Di cư và Bảng vinh danh
+
+Tab **Quản lý Di cư** có danh sách riêng để tìm người chơi, thêm thủ công người không đạt KPI, sửa lý do, xóa khỏi danh sách, đặt một hạn di cư chung và bật hoặc tắt trang công khai.
+
+Trang công khai hiển thị tổng số tài khoản, hạn chung, số ngày còn lại và cảnh báo quá hạn có thể bị đốt thành phố. Khi Player ID không còn trong file Excel mới nhất, hệ thống hiểu người đó đã di cư và tự xóa yêu cầu khỏi danh sách.
+
+Trong tab **Hiển thị Dashboard**, quản trị viên có thể bật hoặc tắt Bảng vinh danh tự động.
+
 ## 8. Import Excel và quản lý dataset
 
 Trong `tuan.html`, chọn tab **Import Excel & Datasets**.
@@ -216,7 +225,7 @@ Ví dụ:
 - Bắt buộc có cột **ID Nhân Vật**.
 - Website đọc sheet đang hoạt động đầu tiên trong file.
 
-Các cột thường dùng gồm Hạng, ID Nhân Vật, Tên Nhân Vật, Lực Chiến Hiện Tại, Lực Chiến Cao Nhất Theo Lịch Sử, Tử Vong, Tổng Công Trạng, Thu Thập, Trị Liệu và các chỉ số liên minh.
+Các cột thường dùng gồm Hạng, ID Nhân Vật, Tên Nhân Vật, Lực Chiến Hiện Tại, Lực Chiến Cao Nhất Theo Lịch Sử, Tổng Công Trạng, Thu Thập và các chỉ số liên minh. Website chấp nhận cả cột gộp cũ và format mới tách riêng **T4/T5 Tử Vong**, **T4/T5 Bị Thương Nặng**, **T4/T5 Được Trị Liệu** và **Công Trạng Của Địch**.
 
 ### Import kỳ mới
 
