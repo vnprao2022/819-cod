@@ -28,6 +28,7 @@
       <div class="page-header admin-page-title"><div><h2>Account Management</h2><p class="subtitle">Server 819 · Custom stats, farm links and Excel datasets</p></div><button class="btn btn-secondary" id="tuan-logout">Logout</button></div>
       <div class="admin-tabs">
         <button class="admin-tab active" data-admin-tab="players">Accounts</button>
+        <button class="admin-tab" data-admin-tab="kpi-filter">Lọc KPI</button>
         <button class="admin-tab" data-admin-tab="migration">Quản lý Di cư</button>
         <button class="admin-tab" data-admin-tab="datasets">Import Excel & Datasets</button>
         <button class="admin-tab" data-admin-tab="visibility">Hiển thị Dashboard</button>
@@ -40,6 +41,43 @@
         </div>
         <div id="admin-ranking"></div>
         <div id="admin-editor"></div>
+      </section>
+      <section id="admin-tab-kpi-filter" hidden>
+        <div class="kpi-filter-hero">
+          <div class="kpi-filter-icon" aria-hidden="true">⌕</div>
+          <div>
+            <span class="eyebrow">CÔNG CỤ KPI</span>
+            <h3>Lọc thành viên theo nhiều điều kiện</h3>
+            <p>Chọn một hoặc nhiều cột. Danh sách chỉ giữ lại người thỏa tất cả điều kiện đã đặt.</p>
+          </div>
+          <div class="kpi-filter-total"><strong id="kpi-filter-total">0</strong><span>thành viên</span></div>
+        </div>
+        <div class="kpi-filter-layout">
+          <section class="kpi-filter-builder">
+            <div class="kpi-filter-section-head"><div><span class="eyebrow">ĐIỀU KIỆN</span><h4>Bộ lọc đang áp dụng</h4></div><span class="muted-text">AND · thỏa tất cả</span></div>
+            <div id="kpi-filter-conditions" class="kpi-filter-conditions"></div>
+            <div class="kpi-filter-actions">
+              <button type="button" class="btn btn-secondary" id="add-kpi-condition">＋ Thêm điều kiện</button>
+              <button type="button" class="btn btn-primary" id="apply-kpi-filter">Lọc danh sách</button>
+              <button type="button" class="btn btn-ghost" id="reset-kpi-filter">Đặt lại</button>
+            </div>
+            <div id="kpi-filter-status" class="admin-save-feedback" role="status" aria-live="polite"></div>
+          </section>
+          <section class="kpi-filter-help">
+            <span class="eyebrow">VÍ DỤ</span>
+            <h4>Lọc người chưa đạt KPI</h4>
+            <ul>
+              <li><strong>M/P (%)</strong> <code>&lt; 10</code></li>
+              <li><strong>Thời gian xây dựng</strong> <code>&lt; 100000</code></li>
+              <li>Kết hợp cả hai để lấy đúng danh sách giao nhau.</li>
+            </ul>
+            <p>Giá trị thời gian lấy theo đơn vị trong file Excel. M/P được tính tự động từ Công trạng ÷ Lực chiến × 100.</p>
+          </section>
+        </div>
+        <section class="kpi-filter-results-card">
+          <div class="kpi-filter-results-head"><div><span class="eyebrow">KẾT QUẢ</span><h4>Danh sách thành viên phù hợp</h4></div><div class="kpi-filter-export"><button type="button" class="btn btn-secondary btn-sm" id="copy-kpi-results">Sao chép</button><button type="button" class="btn btn-secondary btn-sm" id="download-kpi-results">Tải CSV</button></div></div>
+          <div id="kpi-filter-results"></div>
+        </section>
       </section>
       <section id="admin-tab-migration" hidden>
         <div class="migration-manager-hero">

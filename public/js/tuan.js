@@ -11,6 +11,139 @@ let replaceDatasetKey = '';
 let migrationAdminData = { players: [], deadline: '', visible: false };
 let selectedMigrationPlayer = null;
 let migrationAvailablePlayers = [];
+let kpiFilterConditions = [{ field: 'mp_ratio', operator: 'lt', value: '10' }];
+let kpiFilterResults = [];
+
+const KPI_FILTER_FIELDS = [
+  ['mp_ratio', 'M/P (%)'],
+  ['power', 'Lực chiến hiện tại'],
+  ['highest_power', 'Lực chiến cao nhất'],
+  ['merit', 'Công trạng'],
+  ['build_time', 'Thời gian xây dựng'],
+  ['destroy_time', 'Thời gian phá hủy'],
+  ['deaths', 'Tử vong'],
+  ['healing', 'Trị liệu'],
+  ['severely_wounded', 'Bị thương nặng'],
+  ['gathering', 'Thu thập'],
+  ['alliance_donation', 'Đóng góp liên minh'],
+  ['resource_aid', 'Viện trợ tài nguyên'],
+  ['alliance_help', 'Trợ giúp liên minh'],
+  ['behemoth_wins', 'Thắng Behemoth'],
+  ['rank', 'Hạng'],
+];
+
+function renderKpiFilterConditions() {
+  const target = document.getElementById('kpi-filter-conditions');
+  if (!target) return;
+  const options = KPI_FILTER_FIELDS.map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+  target.innerHTML = kpiFilterConditions.map((condition, index) => `
+    <div class="kpi-filter-row" data-kpi-index="${index}">
+      <span class="kpi-filter-row-number">${index + 1}</span>
+      <select data-kpi-field aria-label="Cột lọc">${options}</select>
+      <select data-kpi-operator aria-label="Điều kiện"><option value="lt">nhỏ hơn (&lt;)</option><option value="gt">lớn hơn (&gt;)</option></select>
+      <input type="number" inputmode="decimal" step="any" data-kpi-value aria-label="Giá trị" placeholder="Giá trị">
+      <button type="button" class="btn btn-ghost btn-sm kpi-filter-remove" data-remove-kpi="${index}" aria-label="Xóa điều kiện">×</button>
+    </div>
+  `).join('');
+  target.querySelectorAll('[data-kpi-field]').forEach((select, index) => {
+    select.value = kpiFilterConditions[index].field;
+    select.addEventListener('change', event => { kpiFilterConditions[index].field = event.target.value; });
+  });
+  target.querySelectorAll('[data-kpi-operator]').forEach((select, index) => {
+    select.value = kpiFilterConditions[index].operator;
+    select.addEventListener('change', event => { kpiFilterConditions[index].operator = event.target.value; });
+  });
+  target.querySelectorAll('[data-kpi-value]').forEach((input, index) => {
+    input.value = kpiFilterConditions[index].value;
+    input.addEventListener('input', event => { kpiFilterConditions[index].value = event.target.value; });
+  });
+  target.querySelectorAll('[data-remove-kpi]').forEach(button => button.addEventListener('click', () => {
+    if (kpiFilterConditions.length <= 1) return;
+    kpiFilterConditions.splice(Number(button.dataset.removeKpi), 1);
+    renderKpiFilterConditions();
+  }));
+}
+
+function getKpiFilterValue(player, field) {
+  if (field === 'mp_ratio') return Number(calcMP(player.merit, player.power)) || 0;
+  return Number(player[field]) || 0;
+}
+
+function renderKpiFilterResults() {
+  const target = document.getElementById('kpi-filter-results');
+  const total = document.getElementById('kpi-filter-total');
+  if (!target || !total) return;
+  total.textContent = kpiFilterResults.length;
+  if (!kpiFilterResults.length) {
+    target.innerHTML = '<div class="empty-state kpi-filter-empty"><p>Chưa có kết quả. Hãy đặt điều kiện rồi bấm “Lọc danh sách”.</p></div>';
+    return;
+  }
+  target.innerHTML = `<div class="table-wrapper kpi-filter-table"><table>
+    <thead><tr><th>#</th><th>Player ID</th><th>Tên nhân vật</th><th>Lực chiến</th><th>M/P</th><th>Xây dựng</th><th>Phá hủy</th><th>Tử vong</th><th>Trạng thái</th></tr></thead>
+    <tbody>${kpiFilterResults.map((player, index) => `<tr>
+      <td class="number">${index + 1}</td><td class="role-id number">${escapeHtml(player.role_id || '-')}</td><td class="name">${escapeHtml(player.name || '-')}</td>
+      <td class="number">${formatNumber(player.power)}</td><td class="number">${formatMP(player.merit, player.power)}</td><td class="number">${formatNumber(player.build_time)}</td>
+      <td class="number">${formatNumber(player.destroy_time)}</td><td class="number">${formatNumber(player.deaths)}</td><td><span class="badge badge-status badge-${getPlayerStatus(player)}">${getPlayerStatusLabel(player)}</span></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function applyKpiFilter() {
+  const invalid = kpiFilterConditions.some(condition => condition.value === '' || !Number.isFinite(Number(condition.value)));
+  const status = document.getElementById('kpi-filter-status');
+  if (invalid) {
+    status.className = 'admin-save-feedback error';
+    status.textContent = 'Vui lòng nhập một giá trị số hợp lệ cho từng điều kiện.';
+    return;
+  }
+  kpiFilterResults = adminPlayers.filter(player => kpiFilterConditions.every(condition => {
+    const actual = getKpiFilterValue(player, condition.field);
+    const expected = Number(condition.value);
+    return condition.operator === 'gt' ? actual > expected : actual < expected;
+  })).sort((a, b) => (Number(a.power) || 0) - (Number(b.power) || 0));
+  status.className = 'admin-save-feedback success';
+  status.textContent = `Đã lọc ${kpiFilterResults.length} thành viên theo ${kpiFilterConditions.length} điều kiện.`;
+  renderKpiFilterResults();
+}
+
+function resetKpiFilter() {
+  kpiFilterConditions = [{ field: 'mp_ratio', operator: 'lt', value: '10' }];
+  kpiFilterResults = [];
+  renderKpiFilterConditions();
+  const status = document.getElementById('kpi-filter-status');
+  status.className = 'admin-save-feedback';
+  status.textContent = '';
+  renderKpiFilterResults();
+}
+
+function kpiResultText() {
+  return ['STT\tPlayer ID\tTên nhân vật\tLực chiến\tM/P (%)\tXây dựng\tPhá hủy\tTử vong', ...kpiFilterResults.map((player, index) => [
+    index + 1, player.role_id || '', player.name || '', player.power || 0, calcMP(player.merit, player.power), player.build_time || 0, player.destroy_time || 0, player.deaths || 0,
+  ].join('\t'))].join('\n');
+}
+
+async function copyKpiResults() {
+  const status = document.getElementById('kpi-filter-status');
+  if (!kpiFilterResults.length) { status.className = 'admin-save-feedback error'; status.textContent = 'Chưa có danh sách để sao chép.'; return; }
+  try {
+    await navigator.clipboard.writeText(kpiResultText());
+    status.className = 'admin-save-feedback success';
+    status.textContent = 'Đã sao chép danh sách vào clipboard.';
+  } catch (error) {
+    status.className = 'admin-save-feedback error';
+    status.textContent = 'Không thể sao chép tự động trên trình duyệt này.';
+  }
+}
+
+function downloadKpiResults() {
+  if (!kpiFilterResults.length) return;
+  const csv = '\ufeff' + kpiResultText().split('\n').map(row => row.split('\t').map(value => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n');
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  link.download = 'danh-sach-loc-kpi.csv';
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
 
 function filterAdminRanking() {
   const q = document.getElementById('admin-player-search').value.trim().toLowerCase();
@@ -150,8 +283,10 @@ async function loadAdminPlayers() {
   showLoading(target);
   try {
     const data = await API.get(`/api/servers/819/dataset/${adminDataset}`);
-    adminPlayers = data.players || [];
+    adminPlayers = (data.players || []).map(enrichPlayer);
+    kpiFilterResults = [];
     filterAdminRanking();
+    renderKpiFilterResults();
   } catch (err) { showError(target, err.message); }
 }
 
@@ -282,6 +417,7 @@ async function saveMigrationSettings() {
 function switchAdminTab(tab) {
   document.querySelectorAll('.admin-tab').forEach(button => button.classList.toggle('active', button.dataset.adminTab === tab));
   document.getElementById('admin-tab-players').hidden = tab !== 'players';
+  document.getElementById('admin-tab-kpi-filter').hidden = tab !== 'kpi-filter';
   document.getElementById('admin-tab-migration').hidden = tab !== 'migration';
   document.getElementById('admin-tab-datasets').hidden = tab !== 'datasets';
   document.getElementById('admin-tab-visibility').hidden = tab !== 'visibility';
@@ -419,6 +555,14 @@ function resetExcelImport() {
 
 function bindAdminEvents() {
   document.getElementById('admin-player-search').addEventListener('input', filterAdminRanking);
+  document.getElementById('add-kpi-condition').addEventListener('click', () => {
+    kpiFilterConditions.push({ field: 'power', operator: 'lt', value: '' });
+    renderKpiFilterConditions();
+  });
+  document.getElementById('apply-kpi-filter').addEventListener('click', applyKpiFilter);
+  document.getElementById('reset-kpi-filter').addEventListener('click', resetKpiFilter);
+  document.getElementById('copy-kpi-results').addEventListener('click', copyKpiResults);
+  document.getElementById('download-kpi-results').addEventListener('click', downloadKpiResults);
   document.getElementById('migration-player-search').addEventListener('input', event => {
     selectedMigrationPlayer = null;
     renderMigrationSearchResults(event.target.value);
@@ -435,6 +579,8 @@ function bindAdminEvents() {
 
 async function initializeAdminPage() {
   bindAdminEvents();
+  renderKpiFilterConditions();
+  renderKpiFilterResults();
   resetExcelImport();
   adminDataset = await initDatasetSelector('dataset-selector', '819', key => { adminDataset = key; loadAdminPlayers(); });
   loadAdminPlayers();
