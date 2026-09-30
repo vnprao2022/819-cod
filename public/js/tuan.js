@@ -13,7 +13,7 @@ let selectedMigrationPlayer = null;
 let migrationAvailablePlayers = [];
 let kpiFilterConditions = [{ field: 'mp_ratio', operator: 'lt', value: '10' }];
 let kpiFilterResults = [];
-let kpiIncludeFarms = true;
+let kpiAccountScope = 'all';
 let kpiTierFilter = '';
 
 const KPI_FILTER_FIELDS = [
@@ -114,7 +114,8 @@ function applyKpiFilter() {
   const farmIds = getKpiFarmIds();
   kpiFilterResults = adminPlayers.filter(player => {
     const isFarm = farmIds.has(String(player.role_id));
-    if (!kpiIncludeFarms && isFarm) return false;
+    if (kpiAccountScope === 'farm' && !isFarm) return false;
+    if (kpiAccountScope === 'main' && isFarm) return false;
     if (kpiTierFilter && getKpiTier(player) !== kpiTierFilter) return false;
     return kpiFilterConditions.every(condition => {
     const actual = getKpiFilterValue(player, condition.field);
@@ -130,9 +131,9 @@ function applyKpiFilter() {
 function resetKpiFilter() {
   kpiFilterConditions = [{ field: 'mp_ratio', operator: 'lt', value: '10' }];
   kpiFilterResults = [];
-  kpiIncludeFarms = true;
+  kpiAccountScope = 'all';
   kpiTierFilter = '';
-  document.getElementById('kpi-include-farms').checked = true;
+  document.getElementById('kpi-account-scope').value = 'all';
   document.getElementById('kpi-tier-filter').value = '';
   renderKpiFilterConditions();
   const status = document.getElementById('kpi-filter-status');
@@ -580,7 +581,7 @@ function resetExcelImport() {
 
 function bindAdminEvents() {
   document.getElementById('admin-player-search').addEventListener('input', filterAdminRanking);
-  document.getElementById('kpi-include-farms').addEventListener('change', event => { kpiIncludeFarms = event.target.checked; });
+  document.getElementById('kpi-account-scope').addEventListener('change', event => { kpiAccountScope = event.target.value; });
   document.getElementById('kpi-tier-filter').addEventListener('change', event => { kpiTierFilter = event.target.value; });
   document.getElementById('add-kpi-condition').addEventListener('click', () => {
     kpiFilterConditions.push({ field: 'power', operator: 'lt', value: '' });
