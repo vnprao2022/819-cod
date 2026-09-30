@@ -1103,6 +1103,13 @@ tbody tr:hover td { background: rgba(230, 185, 77, 0.09); }
 .kpi-filter-help li { color: #c5d3e4; }
 .kpi-filter-help code { padding: 0.15rem 0.4rem; border: 1px solid #5a7290; border-radius: 0.3rem; color: #ffd36f; background: #0c1a2c; }
 .kpi-filter-help p { margin: 0; color: #99aec7; font-size: 0.82rem; line-height: 1.5; }
+.kpi-filter-scope { display: grid; grid-template-columns: minmax(0, 1fr) minmax(190px, 0.55fr); gap: 0.75rem; align-items: center; padding: 0.8rem; margin-bottom: 0.85rem; border: 1px solid #385675; border-radius: var(--radius); background: rgba(8, 23, 40, 0.52); }
+.kpi-filter-check { display: flex; align-items: center; gap: 0.65rem; min-height: 42px; cursor: pointer; }
+.kpi-filter-check input { width: 19px; height: 19px; accent-color: var(--accent); }
+.kpi-filter-check span, .kpi-filter-tier { display: flex; flex-direction: column; gap: 0.2rem; }
+.kpi-filter-check strong, .kpi-filter-tier > span { color: #e9f1fb; font-size: 0.86rem; }
+.kpi-filter-check small { color: #9cb1c9; font-size: 0.75rem; }
+.kpi-filter-tier select { min-height: 38px; padding: 0.45rem 0.6rem; border: 1px solid #43617f; border-radius: var(--radius); color: #eff6ff; background: #0d2035; font: inherit; }
 .kpi-filter-conditions { display: grid; gap: 0.6rem; }
 .kpi-filter-row { display: grid; grid-template-columns: 2rem minmax(180px, 1.2fr) minmax(145px, 0.9fr) minmax(130px, 0.8fr) 2.2rem; align-items: center; gap: 0.55rem; }
 .kpi-filter-row-number { display: grid; place-items: center; width: 1.8rem; height: 1.8rem; border: 1px solid #6b85a4; border-radius: 50%; color: #ffd36f; font-size: 0.82rem; font-weight: 800; }
@@ -1119,6 +1126,7 @@ tbody tr:hover td { background: rgba(230, 185, 77, 0.09); }
   .kpi-filter-hero { grid-template-columns: auto 1fr; }
   .kpi-filter-total { grid-column: 1 / -1; flex-direction: row; align-items: baseline; gap: 0.5rem; }
   .kpi-filter-layout { grid-template-columns: 1fr; }
+  .kpi-filter-scope { grid-template-columns: 1fr; }
   .kpi-filter-row { grid-template-columns: 2rem minmax(0, 1fr) minmax(125px, 0.8fr) minmax(105px, 0.75fr) 2rem; }
 }
 @media (max-width: 560px) {

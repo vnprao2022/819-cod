@@ -13,6 +13,8 @@ let selectedMigrationPlayer = null;
 let migrationAvailablePlayers = [];
 let kpiFilterConditions = [{ field: 'mp_ratio', operator: 'lt', value: '10' }];
 let kpiFilterResults = [];
+let kpiIncludeFarms = true;
+let kpiTierFilter = '';
 
 const KPI_FILTER_FIELDS = [
   ['mp_ratio', 'M/P (%)'],
@@ -69,6 +71,17 @@ function getKpiFilterValue(player, field) {
   return Number(player[field]) || 0;
 }
 
+function getKpiFarmIds() {
+  return new Set(adminPlayers.flatMap(player => Array.isArray(player.farm_role_ids)
+    ? player.farm_role_ids.map(String)
+    : []));
+}
+
+function getKpiTier(player) {
+  const tier = String(player.tier || '').trim().toUpperCase();
+  return tier === 'T4' || tier === 'T5' ? tier : '';
+}
+
 function renderKpiFilterResults() {
   const target = document.getElementById('kpi-filter-results');
   const total = document.getElementById('kpi-filter-total');
@@ -78,12 +91,14 @@ function renderKpiFilterResults() {
     target.innerHTML = '<div class="empty-state kpi-filter-empty"><p>Chưa có kết quả. Hãy đặt điều kiện rồi bấm “Lọc danh sách”.</p></div>';
     return;
   }
+  const farmIds = getKpiFarmIds();
   target.innerHTML = `<div class="table-wrapper kpi-filter-table"><table>
-    <thead><tr><th>#</th><th>Player ID</th><th>Tên nhân vật</th><th>Lực chiến</th><th>M/P</th><th>Xây dựng</th><th>Phá hủy</th><th>Tử vong</th><th>Trạng thái</th></tr></thead>
+    <thead><tr><th>#</th><th>Player ID</th><th>Tên nhân vật</th><th>Lực chiến</th><th>M/P</th><th>Xây dựng</th><th>Phá hủy</th><th>Tử vong</th><th>T4/T5</th><th>Loại</th><th>Trạng thái</th></tr></thead>
     <tbody>${kpiFilterResults.map((player, index) => `<tr>
       <td class="number">${index + 1}</td><td class="role-id number">${escapeHtml(player.role_id || '-')}</td><td class="name">${escapeHtml(player.name || '-')}</td>
       <td class="number">${formatNumber(player.power)}</td><td class="number">${formatMP(player.merit, player.power)}</td><td class="number">${formatNumber(player.build_time)}</td>
-      <td class="number">${formatNumber(player.destroy_time)}</td><td class="number">${formatNumber(player.deaths)}</td><td><span class="badge badge-status badge-${getPlayerStatus(player)}">${getPlayerStatusLabel(player)}</span></td>
+      <td class="number">${formatNumber(player.destroy_time)}</td><td class="number">${formatNumber(player.deaths)}</td><td>${getKpiTier(player) || '-'}</td>
+      <td><span class="badge ${farmIds.has(String(player.role_id)) ? 'badge-migration' : 'badge-yes'}">${farmIds.has(String(player.role_id)) ? 'Farm' : 'Chính'}</span></td><td><span class="badge badge-status badge-${getPlayerStatus(player)}">${getPlayerStatusLabel(player)}</span></td>
     </tr>`).join('')}</tbody>
   </table></div>`;
 }
@@ -96,11 +111,17 @@ function applyKpiFilter() {
     status.textContent = 'Vui lòng nhập một giá trị số hợp lệ cho từng điều kiện.';
     return;
   }
-  kpiFilterResults = adminPlayers.filter(player => kpiFilterConditions.every(condition => {
+  const farmIds = getKpiFarmIds();
+  kpiFilterResults = adminPlayers.filter(player => {
+    const isFarm = farmIds.has(String(player.role_id));
+    if (!kpiIncludeFarms && isFarm) return false;
+    if (kpiTierFilter && getKpiTier(player) !== kpiTierFilter) return false;
+    return kpiFilterConditions.every(condition => {
     const actual = getKpiFilterValue(player, condition.field);
     const expected = Number(condition.value);
     return condition.operator === 'gt' ? actual > expected : actual < expected;
-  })).sort((a, b) => (Number(a.power) || 0) - (Number(b.power) || 0));
+    });
+  }).sort((a, b) => (Number(a.power) || 0) - (Number(b.power) || 0));
   status.className = 'admin-save-feedback success';
   status.textContent = `Đã lọc ${kpiFilterResults.length} thành viên theo ${kpiFilterConditions.length} điều kiện.`;
   renderKpiFilterResults();
@@ -109,6 +130,10 @@ function applyKpiFilter() {
 function resetKpiFilter() {
   kpiFilterConditions = [{ field: 'mp_ratio', operator: 'lt', value: '10' }];
   kpiFilterResults = [];
+  kpiIncludeFarms = true;
+  kpiTierFilter = '';
+  document.getElementById('kpi-include-farms').checked = true;
+  document.getElementById('kpi-tier-filter').value = '';
   renderKpiFilterConditions();
   const status = document.getElementById('kpi-filter-status');
   status.className = 'admin-save-feedback';
@@ -555,6 +580,8 @@ function resetExcelImport() {
 
 function bindAdminEvents() {
   document.getElementById('admin-player-search').addEventListener('input', filterAdminRanking);
+  document.getElementById('kpi-include-farms').addEventListener('change', event => { kpiIncludeFarms = event.target.checked; });
+  document.getElementById('kpi-tier-filter').addEventListener('change', event => { kpiTierFilter = event.target.value; });
   document.getElementById('add-kpi-condition').addEventListener('click', () => {
     kpiFilterConditions.push({ field: 'power', operator: 'lt', value: '' });
     renderKpiFilterConditions();
