@@ -1057,6 +1057,10 @@ tbody tr:hover td { background: rgba(230, 185, 77, 0.09); }
 .column-picker-dropdown label { color: #d3deed; }
 .column-picker-dropdown label:hover { background: #1c3858; }
 .empty-state { background: rgba(15, 31, 51, 0.82); border-color: #2b4668; color: #bdcadd; }
+.search-results-card { background: linear-gradient(145deg, #152a42, #101d30); border-color: #385675; }
+.search-result { background: #132943; color: #edf4ff; }
+.search-result:hover { background: #1d3b5d; }
+.search-result span { color: #9cb1c9; }
 .honors-section { padding: 1.15rem; border: 1px solid #735d32; border-radius: var(--radius-lg); background: linear-gradient(135deg, rgba(24, 34, 51, 0.96), rgba(35, 32, 47, 0.96)); box-shadow: var(--shadow); }
 .section-heading h3 { color: #f7d477; font-size: 1.65rem; }
 .section-heading p { color: #b5c5da; }
