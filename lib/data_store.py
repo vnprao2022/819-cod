@@ -49,6 +49,74 @@ def _read_json(path: Path, default=None):
         return json.load(f)
 
 
+_LEGACY_PLAYER_FIELDS = {
+    # Older Vercel imports used the slugified Vietnamese headers below. Keep
+    # these aliases readable so existing remote datasets do not need a full
+    # re-import just because the Excel export changed its column labels.
+    "t4_tu_vong": "deaths_t4",
+    "t5_tu_vong": "deaths_t5",
+    "t4_bi_thuong_nang": "severely_wounded_t4",
+    "t5_bi_thuong_nang": "severely_wounded_t5",
+    "t4_uoc_tri_lieu": "healing_t4",
+    "t5_uoc_tri_lieu": "healing_t5",
+    "cong_trang_cua_ich": "enemy_merit",
+}
+
+
+def _number(value) -> int | float:
+    if value in (None, ""):
+        return 0
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return 0
+    return int(number) if number.is_integer() else number
+
+
+def _normalize_player_metrics(player: dict) -> dict:
+    """Normalize legacy Excel slugs and restore aggregate T4/T5 metrics."""
+    normalized = dict(player or {})
+    for legacy, canonical in _LEGACY_PLAYER_FIELDS.items():
+        if canonical not in normalized or normalized.get(canonical) in (None, ""):
+            if legacy in normalized:
+                normalized[canonical] = _number(normalized.get(legacy))
+
+    component_groups = {
+        "deaths": ("deaths_t4", "deaths_t5"),
+        "severely_wounded": ("severely_wounded_t4", "severely_wounded_t5"),
+        "healing": ("healing_t4", "healing_t5"),
+    }
+    for aggregate, components in component_groups.items():
+        if aggregate not in normalized or normalized.get(aggregate) in (None, ""):
+            if any(component in normalized for component in components):
+                normalized[aggregate] = sum(
+                    _number(normalized.get(component)) for component in components
+                )
+        elif normalized.get(aggregate) == 0 and any(
+            component in normalized and _number(normalized.get(component)) > 0
+            for component in components
+        ):
+            normalized[aggregate] = sum(
+                _number(normalized.get(component)) for component in components
+            )
+    return normalized
+
+
+def _normalize_dataset(dataset: dict | None) -> dict | None:
+    if not dataset:
+        return dataset
+    normalized = dict(dataset)
+    normalized["players"] = [
+        _normalize_player_metrics(player) for player in dataset.get("players", [])
+    ]
+    if isinstance(dataset.get("column_map"), dict):
+        normalized["column_map"] = {
+            header: _LEGACY_PLAYER_FIELDS.get(field, field)
+            for header, field in dataset["column_map"].items()
+        }
+    return normalized
+
+
 def _write_json(path: Path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
@@ -102,12 +170,12 @@ def get_dataset(server_id: str, dataset_key: str) -> dict | None:
     if is_vercel():
         remote = read_blob_dataset(server_id, dataset_key)
         if remote is not None:
-            return remote
+            return _normalize_dataset(remote)
         remote_index = read_blob_dataset_index(server_id)
         if dataset_key in (remote_index or {}).get("deleted", []):
             return None
     path = DATASETS_DIR / server_id / f"{dataset_key}.json"
-    return _read_json(path) if path.exists() else None
+    return _normalize_dataset(_read_json(path) if path.exists() else None)
 
 
 def dataset_exists(server_id: str, dataset_key: str) -> bool:
