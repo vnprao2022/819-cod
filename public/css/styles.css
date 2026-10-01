@@ -1088,6 +1088,19 @@ tbody tr:hover td { background: rgba(230, 185, 77, 0.09); }
 .admin-login-card { background: linear-gradient(145deg, #12243a, #0d1829); border-color: #3c5877; }
 .admin-login-card p, .admin-login-card label, .dataset-admin-header p { color: #b9c8da; }
 
+/* Excel import guide */
+.excel-guide-card { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1rem; align-items: start; padding: 1.25rem 1.35rem; margin-bottom: 1rem; border: 1px solid #b8832c; border-radius: var(--radius-lg); background: linear-gradient(135deg, #172b45, #2d261b); box-shadow: var(--shadow); }
+.excel-guide-icon { display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid #e2b84f; border-radius: 14px; color: #ffd879; background: rgba(245, 182, 55, 0.14); font-size: 1.65rem; }
+.excel-guide-copy h3 { margin: 0.15rem 0 0.55rem; color: #f6d276; font-family: var(--font-display); font-size: 1.35rem; }
+.excel-guide-copy ol { display: grid; gap: 0.35rem; margin: 0; padding-left: 1.25rem; color: #d7e2ef; }
+.excel-guide-copy li { padding-left: 0.15rem; }
+.excel-guide-copy strong { color: #fff0ba; }
+.excel-guide-copy a { color: #ffd36f; font-weight: 800; text-decoration: underline; text-underline-offset: 2px; }
+.excel-guide-copy a:hover { color: #fff1b6; }
+@media (max-width: 600px) {
+  .excel-guide-card { grid-template-columns: 1fr; }
+}
+
 /* KPI filter tool */
 .kpi-filter-hero { position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 1rem; padding: 1.3rem 1.45rem; margin-bottom: 1rem; overflow: hidden; border: 1px solid #c99530; border-radius: var(--radius-lg); background: linear-gradient(125deg, #101c2e 0%, #1f3857 62%, #5e3a15 130%); color: #fff; box-shadow: 0 14px 35px rgba(8, 18, 33, 0.24); }
 .kpi-filter-hero::after { content: ''; position: absolute; right: 10%; top: -120px; width: 210px; height: 210px; border: 1px solid rgba(255, 213, 120, 0.23); border-radius: 50%; box-shadow: 0 0 0 28px rgba(255, 213, 120, 0.04), 0 0 0 58px rgba(255, 213, 120, 0.025); }
