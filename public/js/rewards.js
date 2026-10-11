@@ -4,6 +4,7 @@ const REWARD_FIELDS = [
 ];
 let rewardDataset = Store.getDataset();
 let rewardPlayers = [];
+let rewardLoadVersion = 0;
 
 function setupRewardControls() {
   document.getElementById('criterion-label').textContent = t('reward_criterion');
@@ -32,13 +33,20 @@ function calculateRewards() {
   </table></div>`;
 }
 
-async function loadRewardData() {
-  if (!rewardDataset) return;
+async function loadRewardData(datasetKey = rewardDataset) {
+  if (!datasetKey) return;
+  const requestVersion = ++rewardLoadVersion;
   const content = document.getElementById('rewards-content');
   showLoading(content);
   try {
-    const data = await API.get(`/api/servers/819/dataset/${rewardDataset}`);
-    rewardPlayers = data.players || [];
+    const data = await API.get(`/api/servers/819/dataset/${datasetKey}`);
+    // The API also returns durable snapshots for migrated accounts so the
+    // ranking/player pages can show history. Weekly rewards must only use
+    // accounts that are active in the selected dataset.
+    if (requestVersion !== rewardLoadVersion || datasetKey !== rewardDataset) return;
+    rewardPlayers = (data.players || []).filter(player =>
+      !player.migrated && getPlayerStatus(player) !== 'migrated'
+    );
     document.getElementById('header-subtitle').textContent = `SERVER 819 | ${formatDateRange(data.date_from, data.date_to)}`;
     calculateRewards();
   } catch (err) { showError(content, err.message); }
@@ -48,7 +56,10 @@ async function loadRewardData() {
   await initSidebar('rewards');
   document.querySelector('.page-header h2').textContent = t('nav_rewards');
   setupRewardControls();
-  rewardDataset = await initDatasetSelector('dataset-selector', '819', key => { rewardDataset = key; loadRewardData(); });
+  rewardDataset = await initDatasetSelector('dataset-selector', '819', key => {
+    rewardDataset = key;
+    loadRewardData(key);
+  });
   document.getElementById('calculate-btn').addEventListener('click', calculateRewards);
   loadRewardData();
 })();

@@ -97,7 +97,10 @@ const API = {
 
   async get(path) {
     if (STATIC_MODE) return StaticData.get(path);
-    const res = await fetch(`${this.base}${path}`, { headers: this.authHeaders() });
+    const res = await fetch(`${this.base}${path}`, {
+      cache: 'no-store',
+      headers: this.authHeaders(),
+    });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: res.statusText }));
       throw new Error(err.error || res.statusText);
