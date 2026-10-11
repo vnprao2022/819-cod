@@ -261,6 +261,10 @@ function enrichPlayer(p) {
 const PLAYER_STATUSES = ['active', 'migrated', 'quit', 'rest_ticket'];
 
 function getPlayerStatus(player) {
+  // A player restored from the durable migrated store can still have an old
+  // custom status such as "active". The dataset presence flag is authoritative
+  // for automatic migration, so it must take precedence over custom status.
+  if (player.migrated === true || String(player.migrated).toLowerCase() === 'true') return 'migrated';
   const status = String(player.status || '').trim().toLowerCase();
   if (PLAYER_STATUSES.includes(status)) return status;
   return player.migrated ? 'migrated' : 'active';
